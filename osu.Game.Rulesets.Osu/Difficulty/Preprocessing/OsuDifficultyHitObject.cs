@@ -110,6 +110,17 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
         /// </summary>
         public double SmallCircleBonus { get; private set; }
 
+        /// <summary>
+        /// Time in ms between appearence of this <see cref="OsuDifficultyHitObject"/> and moment to click on it.
+        /// </summary>
+        public readonly double Preempt;
+
+        /// <summary>
+        /// Playback rate of beatmap.
+        /// Will be equal 1.5 on DT and 0.75 on HT.
+        /// </summary>
+        public readonly double ClockRate;
+
         private readonly OsuDifficultyHitObject? lastLastDifficultyObject;
         private readonly OsuDifficultyHitObject? lastDifficultyObject;
 
@@ -118,6 +129,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
         {
             lastLastDifficultyObject = index > 1 ? (OsuDifficultyHitObject)objects[index - 2] : null;
             lastDifficultyObject = index > 0 ? (OsuDifficultyHitObject)objects[index - 1] : null;
+
+            Preempt = BaseObject.TimePreempt / clockRate;
+            ClockRate = clockRate;
 
             // Capped to 25ms to prevent difficulty calculation breaking from simultaneous objects.
             AdjustedDeltaTime = Math.Max(DeltaTime, MIN_DELTA_TIME);
