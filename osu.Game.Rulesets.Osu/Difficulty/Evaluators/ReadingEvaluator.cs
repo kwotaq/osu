@@ -78,7 +78,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             }
 
             // Value higher note densities exponentially
-            double noteDensityDifficulty = Math.Pow(pastObjectDifficultyInfluence + futureObjectDifficultyInfluence, 1.4) * 0.4 * constantAngleNerfFactor * velocity;
+            double noteDensityDifficulty = Math.Pow(pastObjectDifficultyInfluence + futureObjectDifficultyInfluence, 1.7) * 0.4 * constantAngleNerfFactor * velocity;
 
             // Award only denser than average maps.
             noteDensityDifficulty = Math.Max(0, noteDensityDifficulty - density_difficulty_base);
@@ -122,8 +122,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         private static double calculateHiddenDifficulty(OsuDifficultyHitObject currObj, double pastObjectDifficultyInfluence, double currentVisibleObjectDensity, double velocity,
                                                         double constantAngleNerfFactor)
         {
+            double hdmult = 0.25;
             // Higher preempt means that time spent invisible is higher too, we want to reward that
-            double preemptFactor = Math.Pow(currObj.Preempt, 2.1) * 0.01;
+            double preemptFactor = Math.Pow(currObj.Preempt, 2.2) * 0.01;
 
             // Account for both past and current densities
             double densityFactor = Math.Pow(currentVisibleObjectDensity + pastObjectDifficultyInfluence, 3.3) * 3;
@@ -131,7 +132,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             double hiddenDifficulty = (preemptFactor + densityFactor) * constantAngleNerfFactor * velocity * 0.01;
 
             // Apply a soft cap to general HD reading to account for partial memorization
-            hiddenDifficulty = Math.Pow(hiddenDifficulty, 0.45) * hidden_multiplier;
+            hiddenDifficulty = Math.Pow(hiddenDifficulty, 0.4) * hidden_multiplier;
 
             var previousObj = (OsuDifficultyHitObject)currObj.Previous(0);
 
@@ -149,6 +150,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             var currentRatios = calculateRatios(currObj);
 
+            double ratioRepetition = 0;
+
             foreach (var loopObj in retrievePastVisibleObjects(currObj))
             {
                 double loopDifficulty = currObj.OpacityAt(loopObj.BaseObject.StartTime, false);
@@ -159,14 +162,21 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 loopDifficulty *= timeNerfFactor;
 
-                var ratios = calculateRatios(loopObj);
-                rhythmReading += Math.Abs(ratios.time - ratios.spacing) * loopDifficulty;
+                var loopRatios = calculateRatios(loopObj);
+
+                ratioRepetition += 1 - Math.Abs(currentRatios.Time - loopRatios.Time);
+
+                rhythmReading += Math.Abs(loopRatios.Time - loopRatios.Spacing) * loopDifficulty;
             }
+
+            ratioRepetition = Math.Pow(Math.Clamp(4 / ratioRepetition, 0, 1), 2);
+
+            rhythmReading *= ratioRepetition * 1.5;
 
             return rhythmReading;
         }
 
-        private static (double time, double spacing) calculateRatios(OsuDifficultyHitObject currObj)
+        private static (double Time, double Spacing) calculateRatios(OsuDifficultyHitObject currObj)
         {
             var prevObj = (OsuDifficultyHitObject)currObj.Previous(0);
 
