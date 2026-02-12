@@ -49,7 +49,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             double rhythmReading = calculateRhythmReading(currObj, nextObj);
 
-            Console.Out.WriteLine(rhythmReading);
+            // Console.Out.WriteLine(rhythmReading);
 
             double difficulty = DifficultyCalculationUtils.Norm(1.5, preemptDifficulty, hiddenDifficulty, noteDensityDifficulty, rhythmReading);
 
