@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using osu.Framework.Extensions.ObjectExtensions;
+using osu.Framework.Utils;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
@@ -46,7 +47,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             double preemptDifficulty = calculatePreemptDifficulty(velocity, constantAngleNerfFactor, currObj.Preempt);
 
-            double difficulty = DifficultyCalculationUtils.Norm(1.5, preemptDifficulty, hiddenDifficulty, noteDensityDifficulty);
+            double rhythmReading = calculateRhythmReading(currObj, nextObj);
+
+            Console.Out.WriteLine(rhythmReading);
+
+            double difficulty = DifficultyCalculationUtils.Norm(1.5, preemptDifficulty, hiddenDifficulty, noteDensityDifficulty, rhythmReading);
 
             return difficulty;
         }
@@ -73,7 +78,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             }
 
             // Value higher note densities exponentially
-            double noteDensityDifficulty = Math.Pow(pastObjectDifficultyInfluence + futureObjectDifficultyInfluence, 1.7) * 0.4 * constantAngleNerfFactor * velocity;
+            double noteDensityDifficulty = Math.Pow(pastObjectDifficultyInfluence + futureObjectDifficultyInfluence, 1.4) * 0.4 * constantAngleNerfFactor * velocity;
 
             // Award only denser than average maps.
             noteDensityDifficulty = Math.Max(0, noteDensityDifficulty - density_difficulty_base);
@@ -118,7 +123,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                                                         double constantAngleNerfFactor)
         {
             // Higher preempt means that time spent invisible is higher too, we want to reward that
-            double preemptFactor = Math.Pow(currObj.Preempt, 2.2) * 0.01;
+            double preemptFactor = Math.Pow(currObj.Preempt, 2.1) * 0.01;
 
             // Account for both past and current densities
             double densityFactor = Math.Pow(currentVisibleObjectDensity + pastObjectDifficultyInfluence, 3.3) * 3;
@@ -126,15 +131,78 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             double hiddenDifficulty = (preemptFactor + densityFactor) * constantAngleNerfFactor * velocity * 0.01;
 
             // Apply a soft cap to general HD reading to account for partial memorization
-            hiddenDifficulty = Math.Pow(hiddenDifficulty, 0.4) * hidden_multiplier;
+            hiddenDifficulty = Math.Pow(hiddenDifficulty, 0.45) * hidden_multiplier;
 
             var previousObj = (OsuDifficultyHitObject)currObj.Previous(0);
 
             // Buff perfect stacks only if current note is completely invisible at the time you click the previous note.
-            if (currObj.LazyJumpDistance == 0 && currObj.OpacityAt(previousObj.BaseObject.StartTime + previousObj.Preempt, true) == 0 && previousObj.StartTime + previousObj.Preempt > currObj.StartTime)
+            if (currObj.LazyJumpDistance == 0 && currObj.OpacityAt(previousObj.BaseObject.StartTime + previousObj.Preempt, true) == 0
+                                              && previousObj.StartTime + previousObj.Preempt > currObj.StartTime)
                 hiddenDifficulty += hidden_multiplier * 2500 / Math.Pow(currObj.AdjustedDeltaTime, 1.5); // Perfect stacks are harder the less time between notes
 
             return hiddenDifficulty;
+        }
+
+        private static double calculateRhythmReading(OsuDifficultyHitObject currObj, OsuDifficultyHitObject? nextObj)
+        {
+            double rhythmReading = 0;
+
+            var currentRatios = calculateRatios(currObj);
+
+            foreach (var loopObj in retrievePastVisibleObjects(currObj))
+            {
+                double loopDifficulty = currObj.OpacityAt(loopObj.BaseObject.StartTime, false);
+
+                // Account less for objects close to the max reading window
+                double timeBetweenCurrAndLoopObj = currObj.StartTime - loopObj.StartTime;
+                double timeNerfFactor = getTimeNerfFactor(timeBetweenCurrAndLoopObj);
+
+                loopDifficulty *= timeNerfFactor;
+
+                var ratios = calculateRatios(loopObj);
+                rhythmReading += Math.Abs(ratios.time - ratios.spacing) * loopDifficulty;
+            }
+
+            return rhythmReading;
+        }
+
+        private static (double time, double spacing) calculateRatios(OsuDifficultyHitObject currObj)
+        {
+            var prevObj = (OsuDifficultyHitObject)currObj.Previous(0);
+
+            if (prevObj == null)
+                return (0, 0);
+
+            // Use custom cap value to ensure that at this point delta time is actually zero
+            double currDelta = Math.Max(currObj.DeltaTime, 1e-7);
+            double prevDelta = Math.Max(prevObj.DeltaTime, 1e-7);
+
+            // calculate how much current delta difference deserves a rhythm bonus
+            // this function is meant to reduce rhythm bonus for deltas that are multiples of each other (i.e 100 and 200)
+            double timeRatio = Math.Max(prevDelta, currDelta) / Math.Min(prevDelta, currDelta);
+
+            double effectiveRatio = getEffectiveRatio(timeRatio);
+
+            double spacingRatio = DifficultyCalculationUtils.ReverseLerp(currObj.JumpDistance / (prevObj.JumpDistance + 1e-10), 1, 0);
+
+            // if previous object is a slider it might be easier to tap since you don't have to do a whole tapping motion
+            // while a full deltatime might end up some weird ratio the "unpress->tap" motion might be simple
+            // for example a slider-circle-circle pattern should be evaluated as a regular triple and not as a single->double
+            if (prevObj.BaseObject is Slider)
+            {
+                double sliderLazyEndDelta = currObj.MinimumJumpTime;
+                double sliderLazyDeltaDifference = Math.Max(sliderLazyEndDelta, currDelta) / Math.Min(sliderLazyEndDelta, currDelta);
+
+                double sliderRealEndDelta = currObj.LastObjectEndDeltaTime;
+                double sliderRealDeltaDifference = Math.Max(sliderRealEndDelta, currDelta) / Math.Min(sliderRealEndDelta, currDelta);
+
+                double sliderEffectiveRatio = Math.Min(getEffectiveRatio(sliderLazyDeltaDifference), getEffectiveRatio(sliderRealDeltaDifference));
+                effectiveRatio = Math.Min(sliderEffectiveRatio, effectiveRatio);
+
+                spacingRatio = DifficultyCalculationUtils.ReverseLerp(currObj.JumpDistance / (prevObj.TravelDistance + 1e-10), 1, 0);
+            }
+
+            return (time: effectiveRatio, spacing: spacingRatio);
         }
 
         private static double getPastObjectDifficultyInfluence(OsuDifficultyHitObject currObj)
@@ -237,6 +305,43 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         private static double getTimeNerfFactor(double deltaTime)
         {
             return Math.Clamp(2 - deltaTime / (reading_window_size / 2), 0, 1);
+        }
+
+        private static double getEffectiveRatio(double deltaDifference)
+        {
+            var ratioMultipliers = new[]
+            {
+                (1.0, 0.00), // same rhythm
+                (4.0 / 3.0, 2.0), // 1/4 <-> 1/3
+                (1.5, 1.5), // 1/3 <-> 1/2
+                (5.0 / 3.0, 3.0), // 1/5 <-> 1/3
+                (2.0, 0.05), // 1/4 <-> 1/2
+                (2.5, 1.5), // 1/5 <-> 1/2
+                (3.0, 0.25), // 1/3 <-> 1/1
+                (4.0, 0.0) // 1/4 <-> 1/1
+            };
+
+            return LerpFromArrays(ratioMultipliers, deltaDifference);
+        }
+
+        public static double LerpFromArrays((double ratio, double multiplier)[] ratioMultipliers, double t)
+        {
+            if (t <= ratioMultipliers[0].ratio)
+                return ratioMultipliers[0].multiplier;
+
+            if (t >= ratioMultipliers[^1].ratio)
+                return ratioMultipliers[^1].multiplier;
+
+            for (int i = 0; i < ratioMultipliers.Length - 1; i++)
+            {
+                if (t >= ratioMultipliers[i].ratio && t <= ratioMultipliers[i + 1].ratio)
+                {
+                    double distance = (t - ratioMultipliers[i].ratio) / (ratioMultipliers[i + 1].ratio - ratioMultipliers[i].ratio);
+                    return Interpolation.Lerp(ratioMultipliers[i].multiplier, ratioMultipliers[i + 1].multiplier, distance);
+                }
+            }
+
+            return 0;
         }
     }
 }
