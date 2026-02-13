@@ -78,7 +78,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             }
 
             // Value higher note densities exponentially
-            double noteDensityDifficulty = Math.Pow(pastObjectDifficultyInfluence + futureObjectDifficultyInfluence, 1.7) * 0.4 * constantAngleNerfFactor * velocity;
+            double noteDensityDifficulty = Math.Pow(pastObjectDifficultyInfluence + futureObjectDifficultyInfluence, 1.5) * 0.5 * constantAngleNerfFactor * velocity;
 
             // Award only denser than average maps.
             noteDensityDifficulty = Math.Max(0, noteDensityDifficulty - density_difficulty_base);
@@ -175,18 +175,20 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             rhythmReading *= ratioRepetition;
 
-            double preemptDifficulty = Math.Pow(1 + DifficultyCalculationUtils.Smootherstep(currObj.Preempt, preempt_starting_point, 300), 2);
+            double preemptDifficulty = Math.Pow(1 + DifficultyCalculationUtils.Smootherstep(currObj.Preempt, preempt_starting_point, 300), 2) * 0.7;
 
             double ambiguityDifficulty = DifficultyCalculationUtils.Smootherstep(currObj.Preempt, 600, 1500);
 
             if (hidden)
-                ambiguityDifficulty *= 1.2;
+                ambiguityDifficulty *= 1.5;
 
-            ambiguityDifficulty = 1 + Math.Pow(1 + ambiguityDifficulty, 1.5) * 0.5;
+            ambiguityDifficulty = Math.Pow(1 + ambiguityDifficulty, 1.5) * 0.3;
 
-            // Console.Out.WriteLine(ambiguityDifficulty);
+            lowDensityFactor += preemptDifficulty + ambiguityDifficulty;
 
-            return rhythmReading * lowDensityFactor * preemptDifficulty * ambiguityDifficulty;
+            // Console.Out.WriteLine(lowDensityFactor);
+
+            return (rhythmReading * lowDensityFactor);
         }
 
         private static (double Time, double Spacing, double Effective) calculateRatios(OsuDifficultyHitObject currObj)
