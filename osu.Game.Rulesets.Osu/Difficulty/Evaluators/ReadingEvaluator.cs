@@ -184,16 +184,19 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 return (0, 0);
 
             // Use custom cap value to ensure that at this point delta time is actually zero
-            double currDelta = Math.Max(currObj.DeltaTime, 1e-7);
-            double prevDelta = Math.Max(prevObj.DeltaTime, 1e-7);
+            double currTimeDelta = Math.Max(currObj.DeltaTime, 1e-7);
+            double prevTimeDelta = Math.Max(prevObj.DeltaTime, 1e-7);
 
             // calculate how much current delta difference deserves a rhythm bonus
             // this function is meant to reduce rhythm bonus for deltas that are multiples of each other (i.e 100 and 200)
-            double timeRatio = Math.Max(prevDelta, currDelta) / Math.Min(prevDelta, currDelta);
+            double timeRatio = Math.Max(prevTimeDelta, currTimeDelta) / Math.Min(prevTimeDelta, currTimeDelta);
 
             double effectiveRatio = getEffectiveRatio(timeRatio);
 
-            double spacingRatio = DifficultyCalculationUtils.ReverseLerp(currObj.JumpDistance / (prevObj.JumpDistance + 1e-10), 1, 0);
+            double currDistanceDelta = Math.Max(currObj.LazyJumpDistance, 1e-7);
+            double prevDistanceDelta = Math.Max(prevObj.LazyJumpDistance, 1e-7);
+
+            double spacingRatio = DifficultyCalculationUtils.ReverseLerp(currDistanceDelta / prevDistanceDelta, 1, 0);
 
             // if previous object is a slider it might be easier to tap since you don't have to do a whole tapping motion
             // while a full deltatime might end up some weird ratio the "unpress->tap" motion might be simple
@@ -201,18 +204,20 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             if (prevObj.BaseObject is Slider)
             {
                 double sliderLazyEndDelta = currObj.MinimumJumpTime;
-                double sliderLazyDeltaDifference = Math.Max(sliderLazyEndDelta, currDelta) / Math.Min(sliderLazyEndDelta, currDelta);
+                double sliderLazyDeltaDifference = Math.Max(sliderLazyEndDelta, currTimeDelta) / Math.Min(sliderLazyEndDelta, currTimeDelta);
 
                 double sliderRealEndDelta = currObj.LastObjectEndDeltaTime;
-                double sliderRealDeltaDifference = Math.Max(sliderRealEndDelta, currDelta) / Math.Min(sliderRealEndDelta, currDelta);
+                double sliderRealDeltaDifference = Math.Max(sliderRealEndDelta, currTimeDelta) / Math.Min(sliderRealEndDelta, currTimeDelta);
 
                 double sliderEffectiveRatio = Math.Min(getEffectiveRatio(sliderLazyDeltaDifference), getEffectiveRatio(sliderRealDeltaDifference));
                 effectiveRatio = Math.Min(sliderEffectiveRatio, effectiveRatio);
 
-                spacingRatio = DifficultyCalculationUtils.ReverseLerp(currObj.JumpDistance / (prevObj.TravelDistance + 1e-10), 1, 0);
+                prevDistanceDelta = Math.Max(prevObj.TravelDistance, 1e-7);
+
+                spacingRatio = DifficultyCalculationUtils.ReverseLerp(currDistanceDelta / prevDistanceDelta, 1, 0);
             }
 
-            return (time: effectiveRatio, spacing: spacingRatio);
+            return (Time: effectiveRatio, Spacing: spacingRatio);
         }
 
         private static double getPastObjectDifficultyInfluence(OsuDifficultyHitObject currObj)
