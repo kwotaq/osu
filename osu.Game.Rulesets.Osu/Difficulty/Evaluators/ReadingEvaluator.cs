@@ -47,7 +47,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             double preemptDifficulty = calculatePreemptDifficulty(velocity, constantAngleNerfFactor, currObj.Preempt);
 
-            double rhythmReading = calculateRhythmReading(currObj, nextObj);
+            double rhythmReading = calculateRhythmReading(currObj, currentVisibleObjectDensity, hidden);
 
             // Console.Out.WriteLine(rhythmReading);
 
@@ -101,7 +101,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         {
             // Arbitrary curve for the base value preempt difficulty should have as approach rate increases.
             // https://www.desmos.com/calculator/c175335a71
-            double preemptDifficulty = Math.Pow((preempt_starting_point - preempt + Math.Abs(preempt - preempt_starting_point)) / 2, 2.5) / preempt_balancing_factor;
+            double preemptDifficulty = Math.Pow((preempt_starting_point - preempt + Math.Abs(preempt - preempt_starting_point)) / 2, 2.5) / 150000;
 
             preemptDifficulty *= constantAngleNerfFactor * velocity;
 
@@ -132,7 +132,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             double hiddenDifficulty = (preemptFactor + densityFactor) * constantAngleNerfFactor * velocity * 0.01;
 
             // Apply a soft cap to general HD reading to account for partial memorization
-            hiddenDifficulty = Math.Pow(hiddenDifficulty, 0.4) * hidden_multiplier;
+            hiddenDifficulty = Math.Pow(hiddenDifficulty, 0.42) * hidden_multiplier;
 
             var previousObj = (OsuDifficultyHitObject)currObj.Previous(0);
 
@@ -144,7 +144,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             return hiddenDifficulty;
         }
 
-        private static double calculateRhythmReading(OsuDifficultyHitObject currObj, OsuDifficultyHitObject? nextObj)
+        private static double calculateRhythmReading(OsuDifficultyHitObject currObj, double currentVisibleObjectDensity, bool hidden)
         {
             double rhythmReading = 0;
 
@@ -166,22 +166,35 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 ratioRepetition += 1 - Math.Abs(currentRatios.Time - loopRatios.Time);
 
-                rhythmReading += Math.Abs(loopRatios.Time - loopRatios.Spacing) * loopDifficulty;
+                rhythmReading += Math.Abs(loopRatios.Effective - loopRatios.Spacing) * loopDifficulty;
             }
 
             ratioRepetition = Math.Pow(Math.Clamp(4 / ratioRepetition, 0, 1), 2);
 
-            rhythmReading *= ratioRepetition * 1.5;
+            double lowDensityFactor = Math.Pow(1 + DifficultyCalculationUtils.Smootherstep(currentVisibleObjectDensity, 1.5, 0), 2);
 
-            return rhythmReading;
+            rhythmReading *= ratioRepetition;
+
+            double preemptDifficulty = Math.Pow(1 + DifficultyCalculationUtils.Smootherstep(currObj.Preempt, preempt_starting_point, 300), 2);
+
+            double ambiguityDifficulty = DifficultyCalculationUtils.Smootherstep(currObj.Preempt, 600, 1500);
+
+            if (hidden)
+                ambiguityDifficulty *= 1.2;
+
+            ambiguityDifficulty = 1 + Math.Pow(1 + ambiguityDifficulty, 1.5) * 0.5;
+
+            // Console.Out.WriteLine(ambiguityDifficulty);
+
+            return rhythmReading * lowDensityFactor * preemptDifficulty * ambiguityDifficulty;
         }
 
-        private static (double Time, double Spacing) calculateRatios(OsuDifficultyHitObject currObj)
+        private static (double Time, double Spacing, double Effective) calculateRatios(OsuDifficultyHitObject currObj)
         {
             var prevObj = (OsuDifficultyHitObject)currObj.Previous(0);
 
             if (prevObj == null)
-                return (0, 0);
+                return (0, 0, 0);
 
             // Use custom cap value to ensure that at this point delta time is actually zero
             double currTimeDelta = Math.Max(currObj.DeltaTime, 1e-7);
@@ -217,7 +230,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 spacingRatio = DifficultyCalculationUtils.ReverseLerp(currDistanceDelta / prevDistanceDelta, 1, 0);
             }
 
-            return (Time: effectiveRatio, Spacing: spacingRatio);
+            return (Time: timeRatio, Spacing: spacingRatio, Effective: effectiveRatio);
         }
 
         private static double getPastObjectDifficultyInfluence(OsuDifficultyHitObject currObj)
