@@ -101,7 +101,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         {
             // Arbitrary curve for the base value preempt difficulty should have as approach rate increases.
             // https://www.desmos.com/calculator/c175335a71
-            double preemptDifficulty = Math.Pow((preempt_starting_point - preempt + Math.Abs(preempt - preempt_starting_point)) / 2, 2.5) / 150000;
+            double preemptDifficulty = Math.Pow((preempt_starting_point - preempt + Math.Abs(preempt - preempt_starting_point)) / 2, 2.5) / 200000;
 
             preemptDifficulty *= constantAngleNerfFactor * velocity;
 
@@ -122,7 +122,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         private static double calculateHiddenDifficulty(OsuDifficultyHitObject currObj, double pastObjectDifficultyInfluence, double currentVisibleObjectDensity, double velocity,
                                                         double constantAngleNerfFactor)
         {
-            double hdmult = 0.25;
+            double hdmult = 0.28;
             // Higher preempt means that time spent invisible is higher too, we want to reward that
             double preemptFactor = Math.Pow(currObj.Preempt, 2.2) * 0.01;
 
@@ -132,14 +132,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             double hiddenDifficulty = (preemptFactor + densityFactor) * constantAngleNerfFactor * velocity * 0.01;
 
             // Apply a soft cap to general HD reading to account for partial memorization
-            hiddenDifficulty = Math.Pow(hiddenDifficulty, 0.42) * hidden_multiplier;
+            hiddenDifficulty = Math.Pow(hiddenDifficulty, 0.4) * hdmult;
 
             var previousObj = (OsuDifficultyHitObject)currObj.Previous(0);
 
             // Buff perfect stacks only if current note is completely invisible at the time you click the previous note.
             if (currObj.LazyJumpDistance == 0 && currObj.OpacityAt(previousObj.BaseObject.StartTime + previousObj.Preempt, true) == 0
                                               && previousObj.StartTime + previousObj.Preempt > currObj.StartTime)
-                hiddenDifficulty += hidden_multiplier * 2500 / Math.Pow(currObj.AdjustedDeltaTime, 1.5); // Perfect stacks are harder the less time between notes
+                hiddenDifficulty += hdmult * 2500 / Math.Pow(currObj.AdjustedDeltaTime, 1.5); // Perfect stacks are harder the less time between notes
 
             return hiddenDifficulty;
         }
@@ -148,7 +148,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         {
             double rhythmReading = 0;
 
-            var currentRatios = calculateRatios(currObj);
+            var rhythmConstants = calculateRhythmConstants(currObj);
 
             double ratioRepetition = 0;
 
@@ -162,77 +162,85 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 loopDifficulty *= timeNerfFactor;
 
-                var loopRatios = calculateRatios(loopObj);
+                var loopConstants = calculateRhythmConstants(loopObj);
 
-                ratioRepetition += 1 - Math.Abs(currentRatios.Time - loopRatios.Time);
-
-                rhythmReading += Math.Abs(loopRatios.Effective - loopRatios.Spacing) * loopDifficulty;
+                ratioRepetition += 1 - Math.Abs(rhythmConstants.TimeRatio - loopConstants.TimeRatio);
             }
+
+            rhythmReading += Math.Max(0, Math.Pow(rhythmConstants.RhythmDifficulty, 4) - 1);
 
             ratioRepetition = Math.Pow(Math.Clamp(4 / ratioRepetition, 0, 1), 2);
 
-            double lowDensityFactor = Math.Pow(1 + DifficultyCalculationUtils.Smootherstep(currentVisibleObjectDensity, 1.5, 0), 3);
-
             rhythmReading *= ratioRepetition;
 
-            double preemptDifficulty = Math.Pow(1 + DifficultyCalculationUtils.Smootherstep(currObj.Preempt, preempt_starting_point, 300) * 1, 1.5);
+            // Console.Out.WriteLine(rhythmReading);
 
-            double ambiguityDifficulty = DifficultyCalculationUtils.Smootherstep(currObj.Preempt, 600, 1500) * 0.5;
-
-            if (hidden)
-                ambiguityDifficulty *= 1.5;
-
-            ambiguityDifficulty = Math.Pow(1 + ambiguityDifficulty, 1.5);
-
-            lowDensityFactor *= preemptDifficulty * ambiguityDifficulty;
-
-            // Console.Out.WriteLine(lowDensityFactor);
-
-            return (rhythmReading * lowDensityFactor);
+            return Math.Pow(rhythmReading, 3) * 2;
         }
 
-        private static (double Time, double Spacing, double Effective) calculateRatios(OsuDifficultyHitObject currObj)
+        private static (double TimeRatio, double RhythmDifficulty) calculateRhythmConstants(OsuDifficultyHitObject currObj)
         {
             var prevObj = (OsuDifficultyHitObject)currObj.Previous(0);
 
             if (prevObj == null)
-                return (0, 0, 0);
+                return (0, 0);
 
             // Use custom cap value to ensure that at this point delta time is actually zero
             double currTimeDelta = Math.Max(currObj.DeltaTime, 1e-7);
             double prevTimeDelta = Math.Max(prevObj.DeltaTime, 1e-7);
 
-            // calculate how much current delta difference deserves a rhythm bonus
-            // this function is meant to reduce rhythm bonus for deltas that are multiples of each other (i.e 100 and 200)
-            double timeRatio = Math.Max(prevTimeDelta, currTimeDelta) / Math.Min(prevTimeDelta, currTimeDelta);
-
-            double effectiveRatio = getEffectiveRatio(timeRatio);
+            double timeRatio = Math.Max(currTimeDelta / prevTimeDelta, prevTimeDelta / currTimeDelta);
 
             double currDistanceDelta = Math.Max(currObj.LazyJumpDistance, 1e-7);
             double prevDistanceDelta = Math.Max(prevObj.LazyJumpDistance, 1e-7);
 
-            double spacingRatio = DifficultyCalculationUtils.ReverseLerp(currDistanceDelta / prevDistanceDelta, 1, 0);
+            double spacingRatio = currDistanceDelta / prevDistanceDelta;
 
-            // if previous object is a slider it might be easier to tap since you don't have to do a whole tapping motion
-            // while a full deltatime might end up some weird ratio the "unpress->tap" motion might be simple
-            // for example a slider-circle-circle pattern should be evaluated as a regular triple and not as a single->double
+            double spacingChange = calculateSpacingChange(timeRatio, spacingRatio);
+
+            double effectiveRatio = getEffectiveRatio(timeRatio);
+
             if (prevObj.BaseObject is Slider)
             {
                 double sliderLazyEndDelta = currObj.MinimumJumpTime;
-                double sliderLazyDeltaDifference = Math.Max(sliderLazyEndDelta, currTimeDelta) / Math.Min(sliderLazyEndDelta, currTimeDelta);
+                double lazyTimeRatio = Math.Max(currTimeDelta / sliderLazyEndDelta, sliderLazyEndDelta / currTimeDelta);
 
                 double sliderRealEndDelta = currObj.LastObjectEndDeltaTime;
-                double sliderRealDeltaDifference = Math.Max(sliderRealEndDelta, currTimeDelta) / Math.Min(sliderRealEndDelta, currTimeDelta);
+                double realTimeRatio = Math.Max(currTimeDelta / sliderRealEndDelta, sliderRealEndDelta / currTimeDelta);
 
-                double sliderEffectiveRatio = Math.Min(getEffectiveRatio(sliderLazyDeltaDifference), getEffectiveRatio(sliderRealDeltaDifference));
+                double sliderEffectiveRatio = Math.Min(getEffectiveRatio(lazyTimeRatio), getEffectiveRatio(realTimeRatio));
                 effectiveRatio = Math.Min(sliderEffectiveRatio, effectiveRatio);
 
                 prevDistanceDelta = Math.Max(prevObj.TravelDistance, 1e-7);
 
-                spacingRatio = DifficultyCalculationUtils.ReverseLerp(currDistanceDelta / prevDistanceDelta, 1, 0);
+                spacingRatio = currDistanceDelta / prevDistanceDelta;
+
+                double spacingChangeLazy = calculateSpacingChange(lazyTimeRatio, spacingRatio);
+
+                double spacingChangeReal = calculateSpacingChange(realTimeRatio, spacingRatio);
+
+                spacingChange = Math.Min(spacingChangeReal, spacingChangeLazy);
+
+                if (spacingChange == spacingChangeReal)
+                {
+                    timeRatio = realTimeRatio;
+                }
+                else
+                {
+                    timeRatio = lazyTimeRatio;
+                }
             }
 
-            return (Time: timeRatio, Spacing: spacingRatio, Effective: effectiveRatio);
+            // spacingChange *= 1 + effectiveRatio;
+
+            return (TimeRatio: timeRatio, RhythmDifficulty: spacingChange);
+        }
+
+        private static double calculateSpacingChange(double timeRatio, double spacingRatio)
+        {
+            double changeRatio = timeRatio * spacingRatio;
+
+            return Math.Min(1.2, Math.Pow(changeRatio - 1, 2) * 1000) * Math.Min(1.0, Math.Pow(spacingRatio - 1, 2) * 1000);
         }
 
         private static double getPastObjectDifficultyInfluence(OsuDifficultyHitObject currObj)
@@ -341,14 +349,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         {
             var ratioMultipliers = new[]
             {
-                (1.0, 0.00), // same rhythm
+                (1.0, 0.1), // same rhythm
                 (4.0 / 3.0, 2.0), // 1/4 <-> 1/3
                 (1.5, 1.5), // 1/3 <-> 1/2
                 (5.0 / 3.0, 3.0), // 1/5 <-> 1/3
-                (2.0, 0.05), // 1/4 <-> 1/2
+                (2.0, 0.1), // 1/4 <-> 1/2
                 (2.5, 1.5), // 1/5 <-> 1/2
                 (3.0, 0.25), // 1/3 <-> 1/1
-                (4.0, 0.0) // 1/4 <-> 1/1
+                (4.0, 0.1) // 1/4 <-> 1/1
             };
 
             return LerpFromArrays(ratioMultipliers, deltaDifference);
