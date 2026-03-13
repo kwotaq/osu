@@ -62,6 +62,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         private double aimEstimatedSliderBreaks;
         private double speedEstimatedSliderBreaks;
 
+        public static double DifficultyToPerformance(double difficulty) => 4.0 * Math.Pow(difficulty, 3.0);
+
         public OsuPerformanceCalculator()
             : base(new OsuRuleset())
         {
@@ -197,9 +199,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 aimDifficulty *= sliderNerfFactor;
             }
 
-            double aimValue = OsuStrainSkill.DifficultyToPerformance(aimDifficulty);
+            double aimValue = DifficultyToPerformance(aimDifficulty);
 
-            double lengthBonus = 0.95 + 0.3 * Math.Min(1.0, totalHits / 2000.0) +
+            double lengthBonus = 0.95 + 0.35 * Math.Min(1.0, totalHits / 2000.0) +
                                  (totalHits > 2000 ? Math.Log10(totalHits / 2000.0) * 0.5 : 0.0);
             aimValue *= lengthBonus;
 
@@ -293,7 +295,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double accuracyValue = Math.Pow(1.52163, overallDifficulty) * Math.Pow(betterAccuracyPercentage, 24) * 2.83;
 
             // Bonus for many hitcircles - it's harder to keep good accuracy up for longer.
-            accuracyValue *= Math.Min(1.15, Math.Pow(amountHitObjectsWithAccuracy / 1000.0, 0.3));
+            accuracyValue *= amountHitObjectsWithAccuracy < 1000
+                ? Math.Pow(amountHitObjectsWithAccuracy / 1000.0, 0.3)
+                : Math.Pow(amountHitObjectsWithAccuracy / 1000.0, 0.1);
 
             // Increasing the accuracy value by object count for Blinds isn't ideal, so the minimum buff is given.
             if (score.Mods.Any(m => m is OsuModBlinds))
@@ -486,7 +490,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (speedDeviation == null)
                 return 0;
 
-            double speedValue = OsuStrainSkill.DifficultyToPerformance(attributes.SpeedDifficulty);
+            double speedValue = HarmonicSkill.DifficultyToPerformance(attributes.SpeedDifficulty);
 
             // Decides a point where the PP value achieved compared to the speed deviation is assumed to be tapped improperly. Any PP above this point is considered "excess" speed difficulty.
             // This is used to cause PP above the cutoff to scale logarithmically towards the original speed value thus nerfing the value.
