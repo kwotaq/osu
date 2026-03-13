@@ -153,14 +153,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             foreach (var loopObj in retrievePastVisibleObjects(currObj))
             {
-                double loopDifficulty = currObj.OpacityAt(loopObj.BaseObject.StartTime, false);
-
-                // Account less for objects close to the max reading window
-                double timeBetweenCurrAndLoopObj = currObj.StartTime - loopObj.StartTime;
-                double timeNerfFactor = getTimeNerfFactor(timeBetweenCurrAndLoopObj);
-
-                loopDifficulty *= timeNerfFactor;
-
                 var loopConstants = calculateRhythmConstants(loopObj);
 
                 ratioRepetition += 1 - Math.Abs(rhythmConstants.TimeRatio - loopConstants.TimeRatio);
@@ -174,7 +166,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             // Console.Out.WriteLine(rhythmReading);
 
-            return Math.Pow(rhythmReading, 3) * 2;
+            return Math.Pow(rhythmReading, 0.2) * 2.2;
         }
 
         private static (double TimeRatio, double RhythmDifficulty) calculateRhythmConstants(OsuDifficultyHitObject currObj)
@@ -230,9 +222,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 }
             }
 
-            // spacingChange *= 1 + effectiveRatio;
+            // Console.Out.WriteLine($"{spacingChange}, {effectiveRatio}");
 
-            return (TimeRatio: timeRatio, RhythmDifficulty: spacingChange);
+            double rhythmDifficulty = Math.Pow(spacingChange, 4) * (1 + effectiveRatio);
+
+            return (TimeRatio: timeRatio, RhythmDifficulty: rhythmDifficulty);
         }
 
         private static double calculateSpacingChange(double timeRatio, double spacingRatio)
@@ -349,9 +343,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             var ratioMultipliers = new[]
             {
                 (1.0, 0.1), // same rhythm
-                (4.0 / 3.0, 2.0), // 1/4 <-> 1/3
+                (4.0 / 3.0, 1.5), // 1/4 <-> 1/3
                 (1.5, 1.5), // 1/3 <-> 1/2
-                (5.0 / 3.0, 3.0), // 1/5 <-> 1/3
+                (5.0 / 3.0, 1.5), // 1/5 <-> 1/3
                 (2.0, 0.1), // 1/4 <-> 1/2
                 (2.5, 1.5), // 1/5 <-> 1/2
                 (3.0, 0.25), // 1/3 <-> 1/1
