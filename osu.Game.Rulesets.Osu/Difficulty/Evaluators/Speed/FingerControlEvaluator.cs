@@ -10,7 +10,7 @@ using osu.Game.Rulesets.Scoring;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
 {
-    public static class RhythmEvaluator
+    public static class FingerControlEvaluator
     {
         private const double jerk_balancing_factor = 0.040; // Increase this value to make things more based
         private const double jerk_time_constant = 400.0; // 400ms
