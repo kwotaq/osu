@@ -129,6 +129,63 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
         /// </summary>
         public double SmallCircleBonus { get; private set; }
 
+        /// <summary>
+        /// Accessor for RhythmHistory.
+        /// </summary>
+        public RhythmHistory History = new RhythmHistory(16);
+
+        /// <summary>
+        /// Struct containing the rhythm history of a given <see cref="OsuDifficultyHitObject"/>.
+        /// This rhythm history consists of the last 16 rhythmic intervals seen before this object, plus the previous note's jerk.
+        /// </summary>
+        public struct RhythmHistory
+        {
+            private double[] ratios;
+            private int index;
+
+            // Store the SpeedEvaluator's calculated Power and for the next object's jerk delta
+            public double BasePower;
+
+            // Consider jerk as its own "strain", since it propagates through notes
+            // We do not wish to consider it its own *skill* however, we still want to keep it as a factor of speed itself
+            public double JerkStrain;
+
+            public RhythmHistory(int size = 16)
+            {
+                ratios = new double[size];
+                index = 0;
+                BasePower = 0;
+                JerkStrain = 0;
+            }
+
+            // The last 16 rhythmic intervals are stored in a circular buffer
+            public void Push(double ratio, double power)
+            {
+                index = (index + 1) % ratios.Length;
+                ratios[index] = ratio;
+                BasePower = power;
+            }
+
+            // Exponentially decay the integrated jerkiness
+            public void Decay(double dt, double timeConstant)
+            {
+                JerkStrain *= Math.Pow(0.5, dt / timeConstant);
+            }
+
+            public double GetRatio(int lookback)
+            {
+                // Lookback 1 is the most recent ratio, 2 is the one before, etc.
+                return ratios[(index - (lookback - 1) + ratios.Length) % ratios.Length];
+            }
+
+            public void CopyRatios()
+            {
+                double[] newRatios = new double[ratios.Length];
+                Array.Copy(ratios, newRatios, ratios.Length);
+                ratios = newRatios;
+            }
+        }
+
         private readonly OsuDifficultyHitObject? lastLastDifficultyObject;
         private readonly OsuDifficultyHitObject? lastDifficultyObject;
 

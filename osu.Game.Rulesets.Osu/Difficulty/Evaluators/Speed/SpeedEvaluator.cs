@@ -13,7 +13,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
     public static class SpeedEvaluator
     {
         private const double min_speed_bonus = 200; // 200 BPM 1/4th
-        private const double speed_balancing_factor = 40;
+        private const double speed_balancing_factor = 42;
 
         /// <summary>
         /// Evaluates the difficulty of tapping the current object, based on:
@@ -28,6 +28,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
                 return 0;
 
             var osuCurrObj = (OsuDifficultyHitObject)current;
+            var osuPrevObj = (OsuDifficultyHitObject?)current.Previous(0);
 
             double strainTime = osuCurrObj.AdjustedDeltaTime;
             double doubletapness = 1.0 - osuCurrObj.GetDoubletapness((OsuDifficultyHitObject?)osuCurrObj.Next(0));
@@ -47,6 +48,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
             double difficulty = (1 + speedBonus) * 1000 / strainTime;
 
             difficulty *= highBpmBonus(osuCurrObj.AdjustedDeltaTime);
+
+            // Update the current object's rhythm history based on the previous one (needed for later rhythm calculation)
+            if (osuPrevObj != null)
+            {
+                osuCurrObj.History = osuPrevObj.History;
+                osuCurrObj.History.CopyRatios();
+            }
+
+            // Place the object's speed difficulty in its history (needed for later rhythm calculation)
+            osuCurrObj.History.BasePower = difficulty;
 
             // Apply penalty if there's doubletappable doubles
             return difficulty * doubletapness;
