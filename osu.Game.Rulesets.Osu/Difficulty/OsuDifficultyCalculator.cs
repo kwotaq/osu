@@ -129,7 +129,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 AimDifficultSliderCount = difficultSliders,
                 SpeedDifficulty = speedRating,
                 SpeedNoteCount = speedNotes,
-                FingerControlDifficulty = rhythmComplexityRating,
+                RhythmComplexityDifficulty = rhythmComplexityRating,
                 FlashlightDifficulty = flashlightRating,
                 ReadingDifficulty = readingRating,
                 SliderFactor = sliderFactor,

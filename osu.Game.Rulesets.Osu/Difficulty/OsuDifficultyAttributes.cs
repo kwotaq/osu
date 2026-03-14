@@ -35,8 +35,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         /// <summary>
         /// The difficulty corresponding to the speed skill.
         /// </summary>
-        [JsonProperty("finger_control_difficulty")]
-        public double FingerControlDifficulty { get; set; }
+        [JsonProperty("rhythm_complexity_difficulty")]
+        public double RhythmComplexityDifficulty { get; set; }
 
         /// <summary>
         /// The number of clickable objects weighted by difficulty.
@@ -49,14 +49,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         /// The number of clickable objects weighted by difficulty.
         /// Related to <see cref="SpeedDifficulty"/>
         /// </summary>
-        [JsonProperty("finger_control_note_count")]
-        public double RhythmComplexityNoteCount { get; set; }
-
-        /// <summary>
-        /// The number of clickable objects weighted by difficulty.
-        /// Related to <see cref="SpeedDifficulty"/>
-        /// </summary>
-        [JsonProperty("finger_control_difficult_note_count")]
+        [JsonProperty("rhythm_complexity_difficult_note_count")]
         public double RhythmComplexityDifficultNoteCount { get; set; }
 
         /// <summary>

@@ -160,7 +160,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 Aim = aimValue,
                 Speed = speedValue,
                 Accuracy = accuracyValue,
-                FingerControl = rhythmComplexityValue,
+                RhythmComplexity = rhythmComplexityValue,
                 Flashlight = flashlightValue,
                 Reading = readingValue,
                 EffectiveMissCount = effectiveMissCount,
@@ -277,7 +277,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (score.Mods.Any(h => h is OsuModRelax) || speedDeviation == null)
                 return 0.0;
 
-            double rhythmComplexityValue = HarmonicSkill.DifficultyToPerformance(attributes.FingerControlDifficulty);
+            double rhythmComplexityValue = HarmonicSkill.DifficultyToPerformance(attributes.RhythmComplexityDifficulty);
 
             if (effectiveMissCount > 0)
             {
