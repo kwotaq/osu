@@ -123,7 +123,7 @@ namespace osu.Desktop
 
         public override bool RestartAppWhenExited()
         {
-            Task.Run(() => Velopack.UpdateExe.Start()).FireAndForget();
+            Task.Run(() => Velopack.UpdateExe.Start(waitPid: (uint)Environment.ProcessId)).FireAndForget();
             return true;
         }
 
@@ -146,9 +146,13 @@ namespace osu.Desktop
         {
             base.SetHost(host);
 
-            var iconStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(GetType(), "lazer.ico");
-            if (iconStream != null)
-                host.Window.SetIconFromStream(iconStream);
+            // Apple operating systems use a better icon provided via external assets.
+            if (!RuntimeInfo.IsApple)
+            {
+                var iconStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(GetType(), "lazer.ico");
+                if (iconStream != null)
+                    host.Window.SetIconFromStream(iconStream);
+            }
 
             host.Window.Title = Name;
         }

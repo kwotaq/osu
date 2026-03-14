@@ -13,6 +13,7 @@ using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Formats;
 using osu.Game.Beatmaps.Legacy;
 using osu.Game.Database;
+using osu.Game.Extensions;
 using osu.Game.IO.Legacy;
 using osu.Game.Online.API.Requests.Responses;
 using osu.Game.Replays;
@@ -142,6 +143,8 @@ namespace osu.Game.Scoring.Legacy
                             score.ScoreInfo.TotalScoreWithoutMods = totalScoreWithoutMods;
                         else
                             PopulateTotalScoreWithoutMods(score.ScoreInfo);
+
+                        score.ScoreInfo.Pauses.AddRange(readScore.Pauses);
                     });
                 }
             }
@@ -208,7 +211,7 @@ namespace osu.Game.Scoring.Legacy
             var scoreProcessor = rulesetInstance.CreateScoreProcessor();
 
             // Populate the maximum statistics.
-            HitResult maxBasicResult = rulesetInstance.GetHitResults()
+            HitResult maxBasicResult = rulesetInstance.GetHitResultsForDisplay()
                                                       .Select(h => h.result)
                                                       .Where(h => h.IsBasic()).MaxBy(scoreProcessor.GetBaseScoreForResult);
 

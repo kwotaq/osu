@@ -90,7 +90,7 @@ namespace osu.Game
 
         public const int SAMPLE_CONCURRENCY = 6;
 
-        public const double SFX_STEREO_STRENGTH = 0.75;
+        public const double SFX_STEREO_STRENGTH = 0.6;
 
         /// <summary>
         /// Length of debounce (in milliseconds) for commonly occuring sample playbacks that could stack.
@@ -467,8 +467,6 @@ namespace osu.Game
 
         protected virtual void InitialiseFonts()
         {
-            AddFont(Resources, @"Fonts/osuFont");
-
             AddFont(Resources, @"Fonts/Torus/Torus-Regular");
             AddFont(Resources, @"Fonts/Torus/Torus-Light");
             AddFont(Resources, @"Fonts/Torus/Torus-SemiBold");
@@ -489,9 +487,10 @@ namespace osu.Game
             AddFont(Resources, @"Fonts/Inter/Inter-BoldItalic");
 
             AddFont(Resources, @"Fonts/Noto/Noto-Basic");
-            AddFont(Resources, @"Fonts/Noto/Noto-Hangul");
+            AddFont(Resources, @"Fonts/Noto/Noto-Bopomofo");
             AddFont(Resources, @"Fonts/Noto/Noto-CJK-Basic");
             AddFont(Resources, @"Fonts/Noto/Noto-CJK-Compatibility");
+            AddFont(Resources, @"Fonts/Noto/Noto-Hangul");
             AddFont(Resources, @"Fonts/Noto/Noto-Thai");
 
             AddFont(Resources, @"Fonts/Venera/Venera-Light");
@@ -626,7 +625,7 @@ namespace osu.Game
                     return new TouchSettings(th);
 
                 case MidiHandler:
-                    return new InputSection.HandlerSection(handler);
+                    return new InputSubsection(handler);
 
                 // return null for handlers that shouldn't have settings.
                 default:
@@ -649,16 +648,16 @@ namespace osu.Game
 
             Ruleset instance = null;
 
-            try
+            if (r.NewValue?.Available == true)
             {
-                if (r.NewValue?.Available == true)
+                try
                 {
                     instance = r.NewValue.CreateInstance();
                 }
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e, "Ruleset load failed and has been rolled back");
+                catch (Exception e)
+                {
+                    Rulesets.RulesetStore.LogRulesetFailure(r.NewValue, e);
+                }
             }
 
             if (instance == null)
@@ -683,7 +682,7 @@ namespace osu.Game
             }
             catch (Exception e)
             {
-                Logger.Error(e, $"Could not load mods for \"{instance.RulesetInfo.Name}\" ruleset. Current ruleset has been rolled back.");
+                Rulesets.RulesetStore.LogRulesetFailure(r.NewValue, e);
                 revertRulesetChange();
                 return;
             }
