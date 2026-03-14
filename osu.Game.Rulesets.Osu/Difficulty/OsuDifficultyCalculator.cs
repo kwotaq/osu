@@ -65,16 +65,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             var aim = skills.OfType<Aim>().Single(a => a.IncludeSliders);
             var aimWithoutSliders = skills.OfType<Aim>().Single(a => !a.IncludeSliders);
             var speed = skills.OfType<Speed>().Single();
-            var fingerControl = skills.OfType<FingerControl>().Single();
+            var rhythmComplexity = skills.OfType<RhythmComplexity>().Single();
             var flashlight = skills.OfType<Flashlight>().SingleOrDefault();
 
             double speedNotes = speed.RelevantNoteCount();
 
-            double fingerControlNotes = fingerControl.RelevantNoteCount();
-
             double aimDifficultStrainCount = aim.CountTopWeightedStrains();
             double speedDifficultStrainCount = speed.CountTopWeightedStrains();
-            double fingerControlDifficultNoteCount = fingerControl.CountTopWeightedNotes();
+            double rhythmComplexityDifficultNoteCount = rhythmComplexity.CountTopWeightedNotes();
 
             double aimNoSlidersTopWeightedSliderCount = aimWithoutSliders.CountTopWeightedSliders();
             double aimNoSlidersDifficultStrainCount = aimWithoutSliders.CountTopWeightedStrains();
@@ -100,16 +98,18 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double aimDifficultyValue = aim.DifficultyValue();
             double aimNoSlidersDifficultyValue = aimWithoutSliders.DifficultyValue();
             double speedDifficultyValue = speed.DifficultyValue();
-            double fingerControlDifficultyValue = fingerControl.DifficultyValue();
+            double fingerControlDifficultyValue = rhythmComplexity.DifficultyValue();
 
             double mechanicalDifficultyRating = calculateMechanicalDifficultyRating(aimDifficultyValue, speedDifficultyValue);
-            double sliderFactor = aimDifficultyValue > 0 ? OsuRatingCalculator.CalculateDifficultyRating(aimNoSlidersDifficultyValue) / OsuRatingCalculator.CalculateDifficultyRating(aimDifficultyValue) : 1;
+            double sliderFactor = aimDifficultyValue > 0
+                ? OsuRatingCalculator.CalculateDifficultyRating(aimNoSlidersDifficultyValue) / OsuRatingCalculator.CalculateDifficultyRating(aimDifficultyValue)
+                : 1;
 
             var osuRatingCalculator = new OsuRatingCalculator(mods, totalHits, approachRate, overallDifficulty, mechanicalDifficultyRating, sliderFactor);
 
             double aimRating = osuRatingCalculator.ComputeAimRating(aimDifficultyValue);
             double speedRating = osuRatingCalculator.ComputeSpeedRating(speedDifficultyValue);
-            double fingerControlRating = osuRatingCalculator.ComputeFingerControlRating(fingerControlDifficultyValue);
+            double rhythmComplexityRating = osuRatingCalculator.ComputeRhythmComplexityRating(fingerControlDifficultyValue);
 
             double flashlightRating = 0.0;
 
@@ -124,7 +124,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
             double baseAimPerformance = OsuStrainSkill.DifficultyToPerformance(aimRating);
             double baseSpeedPerformance = OsuStrainSkill.DifficultyToPerformance(speedRating);
-            double baseFingerControlPerformance = OsuStrainSkill.DifficultyToPerformance(fingerControlRating);
+            double baseRhythmComplexityPerformance = OsuStrainSkill.DifficultyToPerformance(rhythmComplexityRating);
             double baseFlashlightPerformance = Flashlight.DifficultyToPerformance(flashlightRating);
 
             double basePerformance =
@@ -132,7 +132,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                     Math.Pow(baseAimPerformance, 1.1) +
                     Math.Pow(baseSpeedPerformance, 1.1) +
                     Math.Pow(baseFlashlightPerformance, 1.1) +
-                    Math.Pow(baseFingerControlPerformance, 1.1), 1.0 / 1.1
+                    Math.Pow(baseRhythmComplexityPerformance, 1.1), 1.0 / 1.1
                 );
 
             double multiplier = CalculateDifficultyMultiplier(mods, totalHits, spinnerCount);
@@ -146,13 +146,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 AimDifficultSliderCount = difficultSliders,
                 SpeedDifficulty = speedRating,
                 SpeedNoteCount = speedNotes,
-                FingerControlNoteCount = fingerControlNotes,
-                FingerControlDifficulty = fingerControlRating,
+                FingerControlDifficulty = rhythmComplexityRating,
                 FlashlightDifficulty = flashlightRating,
                 SliderFactor = sliderFactor,
                 AimDifficultStrainCount = aimDifficultStrainCount,
                 SpeedDifficultStrainCount = speedDifficultStrainCount,
-                FingerControlDifficultNoteCount = fingerControlDifficultNoteCount,
+                RhythmComplexityDifficultNoteCount = rhythmComplexityDifficultNoteCount,
                 AimTopWeightedSliderFactor = aimTopWeightedSliderFactor,
                 SpeedTopWeightedSliderFactor = speedTopWeightedSliderFactor,
                 DrainRate = drainRate,
@@ -207,7 +206,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 new Aim(mods, true),
                 new Aim(mods, false),
                 new Speed(mods),
-                new FingerControl(mods)
+                new RhythmComplexity(mods)
             };
 
             if (mods.Any(h => h is OsuModFlashlight))

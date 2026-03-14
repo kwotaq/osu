@@ -17,7 +17,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
     /// <summary>
     /// Represents the skill required to press keys in time with complex rhythmic patterning.
     /// </summary>
-    public class FingerControl : Skill
+    public class RhythmComplexity : Skill
     {
         private double skillMultiplier => 14;
 
@@ -30,7 +30,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         private double currentDifficulty;
         private double strainDecayBase => 0.75;
 
-        public FingerControl(Mod[] mods)
+        public RhythmComplexity(Mod[] mods)
             : base(mods)
         {
         }

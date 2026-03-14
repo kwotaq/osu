@@ -50,14 +50,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         /// Related to <see cref="SpeedDifficulty"/>
         /// </summary>
         [JsonProperty("finger_control_note_count")]
-        public double FingerControlNoteCount { get; set; }
+        public double RhythmComplexityNoteCount { get; set; }
 
         /// <summary>
         /// The number of clickable objects weighted by difficulty.
         /// Related to <see cref="SpeedDifficulty"/>
         /// </summary>
         [JsonProperty("finger_control_difficult_note_count")]
-        public double FingerControlDifficultNoteCount { get; set; }
+        public double RhythmComplexityDifficultNoteCount { get; set; }
 
         /// <summary>
         /// The difficulty corresponding to the flashlight skill.
