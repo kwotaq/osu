@@ -19,7 +19,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
     /// </summary>
     public class RhythmComplexity : HarmonicSkill
     {
-        private double skillMultiplier => 14;
+        private double skillMultiplier => 3;
         private readonly List<double> sliderStrains = new List<double>();
 
         private double currentDifficulty;
