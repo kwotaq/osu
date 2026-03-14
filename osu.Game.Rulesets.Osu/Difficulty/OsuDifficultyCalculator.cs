@@ -61,11 +61,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double aimNoSlidersDifficultyValue = aimWithoutSliders.DifficultyValue();
             double speedDifficultyValue = speed.DifficultyValue();
             double readingDifficultyValue = reading.DifficultyValue();
+            double rhythmComplexityDifficultyValue = rhythmComplexity.DifficultyValue();
 
             double aimDifficultStrainCount = aim.CountTopWeightedStrains(aimDifficultyValue);
             double speedDifficultStrainCount = speed.CountTopWeightedObjectDifficulties(speedDifficultyValue);
             double readingDifficultNoteCount = reading.CountTopWeightedObjectDifficulties(readingDifficultyValue);
-            double rhythmComplexityDifficultNoteCount = rhythmComplexity.CountTopWeightedNotes();
+            double rhythmComplexityDifficultNoteCount = rhythmComplexity.CountTopWeightedObjectDifficulties(rhythmComplexityDifficultyValue);
 
             double speedNotes = speed.RelevantNoteCount();
 
@@ -96,7 +97,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double aimRating = osuRatingCalculator.ComputeAimRating(aimDifficultyValue);
             double speedRating = osuRatingCalculator.ComputeSpeedRating(speedDifficultyValue);
             double readingRating = osuRatingCalculator.ComputeReadingRating(readingDifficultyValue);
-            double rhythmComplexityRating = osuRatingCalculator.ComputeRhythmComplexityRating(fingerControlDifficultyValue);
+            double rhythmComplexityRating = osuRatingCalculator.ComputeRhythmComplexityRating(rhythmComplexityDifficultyValue);
 
             double flashlightRating = 0.0;
 
@@ -112,7 +113,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double baseAimPerformance = OsuPerformanceCalculator.DifficultyToPerformance(aimRating);
             double baseSpeedPerformance = HarmonicSkill.DifficultyToPerformance(speedRating);
             double baseReadingPerformance = HarmonicSkill.DifficultyToPerformance(readingRating);
-            double baseRhythmComplexityPerformance = OsuStrainSkill.DifficultyToPerformance(rhythmComplexityRating);
+            double baseRhythmComplexityPerformance = HarmonicSkill.DifficultyToPerformance(rhythmComplexityRating);
             double baseFlashlightPerformance = Flashlight.DifficultyToPerformance(flashlightRating);
             double baseCognitionPerformance = SumCognitionDifficulty(baseReadingPerformance, baseFlashlightPerformance);
 

@@ -5,10 +5,11 @@ using osu.Game.Rulesets.Osu.Objects;
 using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
+using osu.Game.Rulesets.Scoring;
 
-namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
+namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
 {
-    public static class RhythmEvaluator
+    public static class RhythmComplexityEvaluator
     {
         private static double identicalStrainTolerance;
 
@@ -46,13 +47,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             note_history.Clear();
             note_history_virtual.Clear();
 
-            double strainTime = osuCurrent.StrainTime / 1000;
+            double strainTime = osuCurrent.AdjustedDeltaTime / 1000;
             double virtualStrainTime = calculateVirtualStrainTime(osuCurrent);
-            double prevStrainTime = osuPrev != null ? osuPrev.StrainTime / 1000 : 0;
-            double prev2StrainTime = osuPrev2 != null ? osuPrev2.StrainTime / 1000 : 0;
+            double prevStrainTime = osuPrev != null ? osuPrev.AdjustedDeltaTime / 1000 : 0;
+            double prev2StrainTime = osuPrev2 != null ? osuPrev2.AdjustedDeltaTime / 1000 : 0;
             double prevVirtualStrainTime = osuPrev != null ? calculateVirtualStrainTime(osuPrev) : 0;
             double prev2VirtualStrainTime = osuPrev2 != null ? calculateVirtualStrainTime(osuPrev2) : 0;
-            identicalStrainTolerance = osuCurrent.HitWindowGreat / 2000;
+            identicalStrainTolerance = ((OsuDifficultyHitObject)current).HitWindow(HitResult.Great) / 2000;
 
             int index = -1; // Start from current
 
@@ -67,7 +68,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 if (previousObj is not OsuDifficultyHitObject currObj)
                     continue;
 
-                double strainT = currObj.StrainTime / 1000;
+                double strainT = currObj.AdjustedDeltaTime / 1000;
                 double virtualStrainT = calculateVirtualStrainTime(currObj);
 
                 note_history.Add(strainT);
@@ -129,8 +130,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             if (osuNext == null || osuNext2 == null) return strain;
 
-            double nextTime = osuNext.StrainTime / 1000.0;
-            double next2Time = osuNext2.StrainTime / 1000.0;
+            double nextTime = osuNext.AdjustedDeltaTime / 1000.0;
+            double next2Time = osuNext2.AdjustedDeltaTime / 1000.0;
             double nextVirtualStrainTime = calculateVirtualStrainTime(osuNext);
             double next2VirtualStrainTime = calculateVirtualStrainTime(osuNext2);
 
@@ -184,7 +185,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 return Math.Max((current.StartTime - prevSlider.EndTime) / 1000, 0.025);
 
-            return current.StrainTime / 1000;
+            return current.AdjustedDeltaTime / 1000;
         }
 
         private static double calculateExpectancy(List<double> refNoteHistory, double[] prev_fraction_x, double[] prev_fraction_y)

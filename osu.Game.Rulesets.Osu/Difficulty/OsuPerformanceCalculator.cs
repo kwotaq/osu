@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using osu.Framework.Audio.Track;
 using osu.Framework.Extensions.IEnumerableExtensions;
 using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Mods;
@@ -59,7 +58,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         private double drainRate;
 
         private double? speedDeviation;
-        private double fingerControlDeviation;
 
         private double aimEstimatedSliderBreaks;
         private double speedEstimatedSliderBreaks;
@@ -145,8 +143,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             }
 
             speedDeviation = calculateSpeedDeviation(osuAttributes);
-
-            fingerControlDeviation = calculateFingerControlDeviation(score, osuAttributes);
 
             double aimValue = computeAimValue(score, osuAttributes);
             double speedValue = computeSpeedValue(score, osuAttributes);
@@ -281,7 +277,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (score.Mods.Any(h => h is OsuModRelax) || speedDeviation == null)
                 return 0.0;
 
-            double rhythmComplexityValue = OsuStrainSkill.DifficultyToPerformance(attributes.FingerControlDifficulty);
+            double rhythmComplexityValue = HarmonicSkill.DifficultyToPerformance(attributes.FingerControlDifficulty);
 
             if (effectiveMissCount > 0)
             {
@@ -296,11 +292,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             }
             else if (score.Mods.Any(m => m is OsuModTraceable))
             {
-                rhythmComplexityValue *= 1.0 + OsuRatingCalculator.CalculateVisibilityBonus(score.Mods, approachRate);
+                rhythmComplexityValue *= 1.0 + calculateTraceableBonus(attributes.SliderFactor);
             }
 
             rhythmComplexityValue *= 0.95 + Math.Pow(100.0 / 9, 2) / 750; // OD 11 SS stays the same.
-            rhythmComplexityValue *= 1 / (1 + Math.Pow(fingerControlDeviation / 20, 4)); // Scale the speed value with speed deviation.
 
             // Scale speed value by normalized accuracy.
             // *= Math.Pow(accuracy, 3);
@@ -469,60 +464,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double relevantCountGreat = Math.Max(0, speedNoteCount - relevantCountMiss - relevantCountMeh - relevantCountOk);
 
             return calculateDeviation(relevantCountGreat, relevantCountOk, relevantCountMeh);
-        }
-
-        /// <summary>
-        /// Does the same as <see cref="calculateDeviation"/>, but only for notes and inaccuracies that are relevant to speed difficulty.
-        /// Treats all difficult speed notes as circles, so this method can sometimes return a lower deviation than <see cref="calculateDeviation"/>.
-        /// This is fine though, since this method is only used to scale speed pp.
-        /// </summary>
-        private double calculateFingerControlDeviation(ScoreInfo score, OsuDifficultyAttributes attributes)
-        {
-            if (totalSuccessfulHits == 0)
-                return double.PositiveInfinity;
-
-            // Create a new track to properly calculate the hit windows of 100s and 50s.
-            var track = new TrackVirtual(1);
-            score.Mods.OfType<IApplicableToTrack>().ForEach(m => m.ApplyToTrack(track));
-            double clockRate = track.Rate;
-
-            double hitWindow300 = 80 - 6 * overallDifficulty;
-            double hitWindow100 = (140 - 8 * ((80 - hitWindow300 * clockRate) / 6)) / clockRate;
-            double hitWindow50 = (200 - 10 * ((80 - hitWindow300 * clockRate) / 6)) / clockRate;
-
-            // Calculate accuracy assuming the worst case scenario
-            double fingerControlNoteCount = attributes.RhythmComplexityNoteCount;
-            double relevantTotalDiff = totalHits - attributes.RhythmComplexityNoteCount;
-            double relevantCountGreat = Math.Max(0, countGreat - relevantTotalDiff);
-            double relevantCountOk = Math.Max(0, countOk - Math.Max(0, relevantTotalDiff - countGreat));
-            double relevantCountMeh = Math.Max(0, countMeh - Math.Max(0, relevantTotalDiff - countGreat - countOk));
-            double relevantCountMiss = Math.Max(0, countMiss - Math.Max(0, relevantTotalDiff - countGreat - countOk - countMeh));
-
-            // Assume 100s, 50s, and misses happen on circles. If there are less non-300s on circles than 300s,
-            // compute the deviation on circles.
-            if (relevantCountGreat > 0)
-            {
-                // The probability that a player hits a circle is unknown, but we can estimate it to be
-                // the number of greats on circles divided by the number of circles, and then add one
-                // to the number of circles as a bias correction.
-                double greatProbabilityCircle = relevantCountGreat / (fingerControlNoteCount - relevantCountMiss - relevantCountMeh + 1.0);
-
-                // Compute the deviation assuming 300s and 100s are normally distributed, and 50s are uniformly distributed.
-                // Begin with the normal distribution first.
-                double deviationOnCircles = hitWindow300 / (Math.Sqrt(2) * DifficultyCalculationUtils.ErfInv(greatProbabilityCircle));
-                deviationOnCircles *= Math.Sqrt(1 - Math.Sqrt(2 / Math.PI) * hitWindow100 * Math.Exp(-0.5 * Math.Pow(hitWindow100 / deviationOnCircles, 2))
-                    / (deviationOnCircles * DifficultyCalculationUtils.Erf(hitWindow100 / (Math.Sqrt(2) * deviationOnCircles))));
-
-                // Then compute the variance for 50s.
-                double mehVariance = (hitWindow50 * hitWindow50 + hitWindow100 * hitWindow50 + hitWindow100 * hitWindow100) / 3;
-
-                // Find the total deviation.
-                deviationOnCircles = Math.Sqrt(((relevantCountGreat + relevantCountOk) * Math.Pow(deviationOnCircles, 2) + relevantCountMeh * mehVariance) / (relevantCountGreat + relevantCountOk + relevantCountMeh));
-
-                return deviationOnCircles;
-            }
-
-            return double.PositiveInfinity;
         }
 
         /// <summary>
