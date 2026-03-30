@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using osu.Framework.Extensions.ObjectExtensions;
-using osu.Framework.Utils;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
@@ -77,7 +76,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             if (nextObj != null)
             {
                 // Reduce difficulty if movement to next object is small
-                futureObjectDifficultyInfluence *= DifficultyCalculationUtils.Smootherstep(nextObj.LazyJumpDistance, 15, distance_influence_threshold);
+                futureObjectDifficultyInfluence *= DifficultyCalculationUtils.Smootherstep(nextObj.LazyJumpDistance, 15, OsuDifficultyHitObject.NORMALISED_DIAMETER);
             }
 
             // Value higher note densities exponentially
@@ -104,7 +103,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         {
             // Arbitrary curve for the base value preempt difficulty should have as approach rate increases.
             // https://www.desmos.com/calculator/c175335a71
-            double preemptDifficulty = Math.Pow((preempt_starting_point - preempt + Math.Abs(preempt - preempt_starting_point)) / 2, 2.5) / 200000;
+            double preemptDifficulty = Math.Pow((preempt_starting_point - preempt + Math.Abs(preempt - preempt_starting_point)) / 2, 2.5) / preempt_balancing_factor;
 
             preemptDifficulty *= constantAngleNerfFactor * velocity;
 
@@ -135,13 +134,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             double hiddenDifficulty = (preemptFactor + densityFactor) * constantAngleNerfFactor * velocity * 0.01;
 
             // Apply a soft cap to general HD reading to account for partial memorization
-            hiddenDifficulty = Math.Pow(hiddenDifficulty, 0.4) * hdmult;
+            hiddenDifficulty = Math.Pow(hiddenDifficulty, 0.4) * hidden_multiplier;
 
             var previousObj = (OsuDifficultyHitObject)currObj.Previous(0);
 
             // Buff perfect stacks only if current note is completely invisible at the time you click the previous note.
             if (currObj.LazyJumpDistance == 0 && currObj.OpacityAt(previousObj.BaseObject.StartTime, true) == 0 && previousObj.StartTime > currObj.StartTime - currObj.Preempt)
-                hiddenDifficulty += hdmult * 2500 / Math.Pow(currObj.AdjustedDeltaTime, 1.5); // Perfect stacks are harder the less time between notes
+                hiddenDifficulty += hidden_multiplier * 2500 / Math.Pow(currObj.AdjustedDeltaTime, 1.5); // Perfect stacks are harder the less time between notes
 
             return hiddenDifficulty;
         }
@@ -169,7 +168,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             // Console.Out.WriteLine(rhythmReading);
 
-            return Math.Pow(rhythmReading, 0.2) * 2.2;
+            return Math.Pow(rhythmReading, 5) * 1.5;
         }
 
         private static (double TimeRatio, double RhythmDifficulty) calculateRhythmConstants(OsuDifficultyHitObject currObj)
@@ -192,8 +191,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             double spacingChange = calculateSpacingChange(timeRatio, spacingRatio);
 
-            double effectiveRatio = getEffectiveRatio(timeRatio);
-
             if (prevObj.BaseObject is Slider)
             {
                 double sliderLazyEndDelta = currObj.MinimumJumpTime;
@@ -201,9 +198,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 double sliderRealEndDelta = currObj.LastObjectEndDeltaTime;
                 double realTimeRatio = Math.Max(currTimeDelta / sliderRealEndDelta, sliderRealEndDelta / currTimeDelta);
-
-                double sliderEffectiveRatio = Math.Min(getEffectiveRatio(lazyTimeRatio), getEffectiveRatio(realTimeRatio));
-                effectiveRatio = Math.Min(sliderEffectiveRatio, effectiveRatio);
 
                 prevDistanceDelta = Math.Max(prevObj.TravelDistance, 1e-7);
 
@@ -225,9 +219,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 }
             }
 
-            // Console.Out.WriteLine($"{spacingChange}, {effectiveRatio}");
-
-            double rhythmDifficulty = Math.Pow(spacingChange, 4) * (1 + effectiveRatio);
+            double rhythmDifficulty = spacingChange;
 
             return (TimeRatio: timeRatio, RhythmDifficulty: rhythmDifficulty);
         }
@@ -364,43 +356,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         private static double getTimeNerfFactor(double deltaTime)
         {
             return Math.Clamp(2 - deltaTime / (reading_window_size / 2), 0, 1);
-        }
-
-        private static double getEffectiveRatio(double deltaDifference)
-        {
-            var ratioMultipliers = new[]
-            {
-                (1.0, 0.1), // same rhythm
-                (4.0 / 3.0, 1.5), // 1/4 <-> 1/3
-                (1.5, 1.5), // 1/3 <-> 1/2
-                (5.0 / 3.0, 1.5), // 1/5 <-> 1/3
-                (2.0, 0.1), // 1/4 <-> 1/2
-                (2.5, 1.5), // 1/5 <-> 1/2
-                (3.0, 0.25), // 1/3 <-> 1/1
-                (4.0, 0.1) // 1/4 <-> 1/1
-            };
-
-            return LerpFromArrays(ratioMultipliers, deltaDifference);
-        }
-
-        public static double LerpFromArrays((double ratio, double multiplier)[] ratioMultipliers, double t)
-        {
-            if (t <= ratioMultipliers[0].ratio)
-                return ratioMultipliers[0].multiplier;
-
-            if (t >= ratioMultipliers[^1].ratio)
-                return ratioMultipliers[^1].multiplier;
-
-            for (int i = 0; i < ratioMultipliers.Length - 1; i++)
-            {
-                if (t >= ratioMultipliers[i].ratio && t <= ratioMultipliers[i + 1].ratio)
-                {
-                    double distance = (t - ratioMultipliers[i].ratio) / (ratioMultipliers[i + 1].ratio - ratioMultipliers[i].ratio);
-                    return Interpolation.Lerp(ratioMultipliers[i].multiplier, ratioMultipliers[i + 1].multiplier, distance);
-                }
-            }
-
-            return 0;
         }
 
         private static double highBpmBonus(double ms) => 1 / (1 - Math.Pow(0.8, ms / 1000));
