@@ -30,6 +30,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         }
 
         private double currentStrain;
+        private double previousPFlow;
+        private double changeStrain;
 
         private double skillMultiplierSnap => 70.9;
         private double skillMultiplierAgility => 2.35;
@@ -51,6 +53,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         private readonly List<double> sliderStrains = new List<double>();
 
         private double strainDecay(double ms) => Math.Pow(0.2, ms / 1000);
+
+        private double changeStrainDecay(double ms) => Math.Pow(0.15, ms / 1000);
 
         protected override double CalculateInitialStrain(double time, DifficultyHitObject current) =>
             currentStrain * strainDecay(time - current.Previous(0).StartTime);
@@ -75,7 +79,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 agilityDifficulty *= 0.3;
             }
 
-            double totalDifficulty = calculateTotalValue(snapDifficulty, agilityDifficulty, flowDifficulty);
+            double totalDifficulty = calculateTotalValue(snapDifficulty, agilityDifficulty, flowDifficulty, current);
 
             currentStrain *= decay;
             currentStrain += totalDifficulty * (1 - decay);
@@ -86,7 +90,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return currentStrain;
         }
 
-        private double calculateTotalValue(double snapDifficulty, double agilityDifficulty, double flowDifficulty)
+        private double calculateTotalValue(double snapDifficulty, double agilityDifficulty, double flowDifficulty, DifficultyHitObject current)
         {
             // We compare flow to combined snap and agility because snap by itself doesn't have enough difficulty to be above flow on streams
             // Agility on the other hand is supposed to measure the rate of cursor velocity changes while snapping
@@ -96,7 +100,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double pSnap = calculateSnapFlowProbability(flowDifficulty / combinedSnapDifficulty);
             double pFlow = 1 - pSnap;
 
-            double totalDifficulty = combinedSnapDifficulty * pSnap + flowDifficulty * pFlow;
+            changeStrain *= changeStrainDecay(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
+            changeStrain += Math.Abs(previousPFlow - pFlow) * 10;
+            previousPFlow = pFlow;
+
+            double totalDifficulty = combinedSnapDifficulty * pSnap + flowDifficulty * pFlow + changeStrain;
 
             double totalStrain = totalDifficulty * skillMultiplierTotal;
 
