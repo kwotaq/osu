@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using osu.Framework.Extensions.ObjectExtensions;
+using osu.Framework.Utils;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
@@ -149,34 +150,36 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         {
             double rhythmReading = 0;
 
-            var rhythmConstants = calculateRhythmConstants(currObj);
+            var currConstants = calculateRhythmConstants(currObj);
 
-            double ratioRepetition = 0;
+            double timeRatioRepetition = 0;
+            double spacingRatioRepetition = 1;
 
             foreach (var loopObj in retrievePastVisibleObjects(currObj))
             {
                 var loopConstants = calculateRhythmConstants(loopObj);
 
-                ratioRepetition += 1 - Math.Abs(rhythmConstants.TimeRatio - loopConstants.TimeRatio);
+                timeRatioRepetition += 1 - Math.Abs(currConstants.TimeRatio - loopConstants.TimeRatio);
+                spacingRatioRepetition += Math.Max(0, 1 - Math.Abs(currConstants.SpacingRatio - loopConstants.SpacingRatio)) / 1.8;
             }
 
-            rhythmReading += Math.Max(0, Math.Pow(rhythmConstants.RhythmDifficulty, 4) - 1);
+            rhythmReading += Math.Max(0, currConstants.Mismatch - 1.2);
 
-            ratioRepetition = Math.Pow(Math.Clamp(4 / ratioRepetition, 0, 1), 2);
+            timeRatioRepetition = Math.Pow(Math.Clamp(4 / timeRatioRepetition, 0, 1), 2);
 
-            rhythmReading *= ratioRepetition;
+            rhythmReading *= timeRatioRepetition;
 
             // Console.Out.WriteLine(rhythmReading);
 
-            return Math.Pow(rhythmReading, 5) * 1.5;
+            return Math.Pow(rhythmReading * 50, 1.2);
         }
 
-        private static (double TimeRatio, double RhythmDifficulty) calculateRhythmConstants(OsuDifficultyHitObject currObj)
+        private static (double TimeRatio, double SpacingRatio, double Mismatch) calculateRhythmConstants(OsuDifficultyHitObject currObj)
         {
             var prevObj = (OsuDifficultyHitObject)currObj.Previous(0);
 
             if (prevObj == null)
-                return (0, 0);
+                return (0, 0, 0);
 
             // Use custom cap value to ensure that at this point delta time is actually zero
             double currTimeDelta = Math.Max(currObj.DeltaTime, 1e-7);
@@ -189,7 +192,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             double spacingRatio = currDistanceDelta / prevDistanceDelta;
 
-            double spacingChange = calculateSpacingChange(timeRatio, spacingRatio);
+            double effectiveRatio = getEffectiveRatio(timeRatio);
+
+            double mismatch = calculateMismatch(timeRatio, spacingRatio, effectiveRatio);
 
             if (prevObj.BaseObject is Slider)
             {
@@ -199,17 +204,20 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 double sliderRealEndDelta = currObj.LastObjectEndDeltaTime;
                 double realTimeRatio = Math.Max(currTimeDelta / sliderRealEndDelta, sliderRealEndDelta / currTimeDelta);
 
+                double sliderEffectiveRatio = Math.Min(getEffectiveRatio(lazyTimeRatio), getEffectiveRatio(realTimeRatio));
+                effectiveRatio = Math.Min(sliderEffectiveRatio, effectiveRatio);
+
                 prevDistanceDelta = Math.Max(prevObj.TravelDistance, 1e-7);
 
                 spacingRatio = currDistanceDelta / prevDistanceDelta;
 
-                double spacingChangeLazy = calculateSpacingChange(lazyTimeRatio, spacingRatio);
+                double mismatchLazy = calculateMismatch(lazyTimeRatio, spacingRatio, effectiveRatio);
 
-                double spacingChangeReal = calculateSpacingChange(realTimeRatio, spacingRatio);
+                double mismatchReal = calculateMismatch(realTimeRatio, spacingRatio, effectiveRatio);
 
-                spacingChange = Math.Min(spacingChangeReal, spacingChangeLazy);
+                mismatch = Math.Min(mismatchReal, mismatchLazy);
 
-                if (spacingChange == spacingChangeReal)
+                if (mismatch == mismatchReal)
                 {
                     timeRatio = realTimeRatio;
                 }
@@ -219,16 +227,21 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 }
             }
 
-            double rhythmDifficulty = spacingChange;
-
-            return (TimeRatio: timeRatio, RhythmDifficulty: rhythmDifficulty);
+            return (TimeRatio: timeRatio, SpacingRatio: spacingRatio, Mismatch: mismatch);
         }
 
-        private static double calculateSpacingChange(double timeRatio, double spacingRatio)
+        private static double calculateMismatch(double timeRatio, double spacingRatio, double effectiveRatio)
         {
-            double changeRatio = timeRatio * spacingRatio;
+            double mismatch = Math.Max(timeRatio / spacingRatio, spacingRatio / timeRatio);
 
-            return Math.Min(1.2, Math.Pow(changeRatio - 1, 2) * 1000) * Math.Min(1.0, Math.Pow(spacingRatio - 1, 2) * 1000);
+            double mismatchTerm = Math.Min(1.2, Math.Pow(mismatch - 1, 2) * 1000);
+
+            double rhythmBaseline = effectiveRatio * 0.1;
+            double stableSpacingBonus = Math.Max(1.0, 1.1 / (1.0 + Math.Pow(spacingRatio - 1, 2) * 100));
+
+            // Console.Out.WriteLine(mismatchTerm);
+
+            return (mismatchTerm + rhythmBaseline) * stableSpacingBonus;
         }
 
         private static double getPastObjectDifficultyInfluence(OsuDifficultyHitObject currObj)
@@ -356,6 +369,43 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         private static double getTimeNerfFactor(double deltaTime)
         {
             return Math.Clamp(2 - deltaTime / (reading_window_size / 2), 0, 1);
+        }
+
+        private static double getEffectiveRatio(double deltaDifference)
+        {
+            var ratioMultipliers = new[]
+            {
+                (1.0, 0.1), // same rhythm
+                (4.0 / 3.0, 1.5), // 1/4 <-> 1/3
+                (1.5, 1.5), // 1/3 <-> 1/2
+                (5.0 / 3.0, 1.5), // 1/5 <-> 1/3
+                (2.0, 0.1), // 1/4 <-> 1/2
+                (2.5, 1.5), // 1/5 <-> 1/2
+                (3.0, 0.25), // 1/3 <-> 1/1
+                (4.0, 0.1) // 1/4 <-> 1/1
+            };
+
+            return LerpFromArrays(ratioMultipliers, deltaDifference);
+        }
+
+        public static double LerpFromArrays((double ratio, double multiplier)[] ratioMultipliers, double t)
+        {
+            if (t <= ratioMultipliers[0].ratio)
+                return ratioMultipliers[0].multiplier;
+
+            if (t >= ratioMultipliers[^1].ratio)
+                return ratioMultipliers[^1].multiplier;
+
+            for (int i = 0; i < ratioMultipliers.Length - 1; i++)
+            {
+                if (t >= ratioMultipliers[i].ratio && t <= ratioMultipliers[i + 1].ratio)
+                {
+                    double distance = (t - ratioMultipliers[i].ratio) / (ratioMultipliers[i + 1].ratio - ratioMultipliers[i].ratio);
+                    return Interpolation.Lerp(ratioMultipliers[i].multiplier, ratioMultipliers[i + 1].multiplier, distance);
+                }
+            }
+
+            return 0;
         }
 
         private static double highBpmBonus(double ms) => 1 / (1 - Math.Pow(0.8, ms / 1000));
