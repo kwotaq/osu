@@ -58,7 +58,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 double angularVelocity = angleDifferenceAdjusted / (osuCurrObj.AdjustedDeltaTime * 0.1);
 
                 // Low angular velocity flow (angles are consistent) is easier to follow than erratic flow
-                flowDifficulty *= 0.8 + Math.Sqrt(angularVelocity / 200.0);
+                flowDifficulty *= 0.8 + Math.Sqrt(angularVelocity / 150.0);
             }
 
             // If all three notes are overlapping - don't reward bonuses as you don't have to do additional movement
@@ -96,7 +96,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
                 flowDifficulty += Math.Min(prevCurrVelocityBonus, currNextVelocityBonus) *
                                   overlappedNotesWeight *
-                                  0.35;
+                                  0.25;
             }
 
             if (osuCurrObj.BaseObject is Slider && withSliderTravelDistance)
