@@ -25,7 +25,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             var osuCurrObj = (OsuDifficultyHitObject)current;
             var osuLastObj = (OsuDifficultyHitObject)current.Previous(0);
             var osuLastLastObj = (OsuDifficultyHitObject)current.Previous(1);
+            var osuNextObj = (OsuDifficultyHitObject?)current.Next(0);
 
+            double? nextDistance = withSliderTravelDistance ? osuNextObj?.LazyJumpDistance : osuNextObj?.JumpDistance;
             double currDistance = withSliderTravelDistance ? osuCurrObj.LazyJumpDistance : osuCurrObj.JumpDistance;
             double prevDistance = withSliderTravelDistance ? osuLastObj.LazyJumpDistance : osuLastObj.JumpDistance;
 
@@ -47,8 +49,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             flowDifficulty *= Math.Sqrt(osuCurrObj.SmallCircleBonus);
 
             // Rhythm changes are harder to flow
-            flowDifficulty *= 1 + Math.Min(0.25,
-                Math.Pow((Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) - Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime)) / 50, 4));
+            flowDifficulty *= 1 + Math.Min(0.1, Math.Pow(Math.Abs(osuCurrObj.AdjustedDeltaTime - osuLastObj.AdjustedDeltaTime) / 50, 4));
 
             if (osuCurrObj.Angle != null && osuLastObj.Angle != null)
             {
@@ -72,31 +73,28 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 overlappedNotesWeight = 1 - o1 * o2 * o3;
             }
 
-            if (osuCurrObj.Angle != null)
+            if (osuCurrObj.Angle != null && osuNextObj?.Angle != null)
             {
                 // Acute angles are also hard to flow
                 // We square root velocity to make acute angle switches in streams aren't having difficulty higher than snap
-                flowDifficulty += Math.Sqrt(currVelocity) *
-                                  SnapAimEvaluator.CalcAngleAcuteness(osuCurrObj.Angle.Value) *
+                flowDifficulty += currVelocity *
+                                  Math.Min(SnapAimEvaluator.CalcAngleAcuteness(osuCurrObj.Angle.Value), SnapAimEvaluator.CalcAngleAcuteness(osuNextObj.Angle.Value)) *
                                   overlappedNotesWeight;
             }
 
-            if (Math.Max(prevVelocity, currVelocity) != 0)
+            double? nextVelocity = nextDistance / osuNextObj?.AdjustedDeltaTime;
+
+            if (Math.Max(nextVelocity ?? 0, currVelocity) != 0 && Math.Max(prevVelocity, currVelocity) != 0 && osuNextObj != null)
             {
                 if (withSliderTravelDistance)
                 {
                     currVelocity = currDistance / osuCurrObj.AdjustedDeltaTime;
                 }
 
-                // Scale with ratio of difference compared to 0.5 * max dist.
-                double distRatio = DifficultyCalculationUtils.Smoothstep(Math.Abs(prevVelocity - currVelocity) / Math.Max(prevVelocity, currVelocity), 0, 1);
+                double prevCurrVelocityBonus = calculateVelocityChangeBonus(prevVelocity, currVelocity, osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime);
+                double currNextVelocityBonus = calculateVelocityChangeBonus(currVelocity, nextVelocity!.Value, osuNextObj.AdjustedDeltaTime, osuCurrObj.AdjustedDeltaTime);
 
-                // Reward for % distance up to 125 / strainTime for overlaps where velocity is still changing.
-                double overlapVelocityBuff = Math.Min(OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.25 / Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime),
-                    Math.Abs(prevVelocity - currVelocity));
-
-                flowDifficulty += overlapVelocityBuff *
-                                  distRatio *
+                flowDifficulty += Math.Min(prevCurrVelocityBonus, currNextVelocityBonus) *
                                   overlappedNotesWeight *
                                   0.35;
             }
@@ -108,7 +106,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             }
 
             // Final velocity is being raised to a power because flow difficulty scales harder with both high distance and time, and we want to account for that
-            return Math.Pow(flowDifficulty, 1.45) * DifficultyCalculationUtils.Smootherstep(currDistance, 0, OsuDifficultyHitObject.NORMALISED_RADIUS);
+            return Math.Pow(flowDifficulty, 1.45);
         }
 
         private static double calculateOverlapFactor(OsuDifficultyHitObject first, OsuDifficultyHitObject second)
@@ -119,6 +117,19 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             double distance = Vector2.Distance(firstBase.StackedPosition, secondBase.StackedPosition);
             return Math.Clamp(1 - Math.Pow(Math.Max(distance - objectRadius, 0) / objectRadius, 2), 0, 1);
+        }
+
+        private static double calculateVelocityChangeBonus(double firstVelocity, double secondVelocity, double firstDeltaTime, double secondDeltaTime)
+        {
+            // Scale with ratio of difference compared to 0.5 * max dist.
+            double distRatio = DifficultyCalculationUtils.Smoothstep(Math.Abs(firstVelocity - secondVelocity) / Math.Max(firstVelocity, secondVelocity), 0, 1);
+
+            // Reward for % distance up to 125 / strainTime for overlaps where velocity is still changing.
+            double overlapVelocityBuff = Math.Min(OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.25 / Math.Min(firstDeltaTime, secondDeltaTime),
+                Math.Abs(firstVelocity - secondVelocity));
+
+            return overlapVelocityBuff *
+                   distRatio;
         }
     }
 }
