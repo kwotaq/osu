@@ -211,8 +211,5 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             return bonus * 0.05;
         }
-
-        // https://www.desmos.com/calculator/secrjaywao
-        public static double LengthBonusMultiplier(double time) => time;
     }
 }
