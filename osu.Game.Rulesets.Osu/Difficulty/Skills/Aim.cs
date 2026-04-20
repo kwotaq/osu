@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using osu.Framework.Utils;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Skills;
 using osu.Game.Rulesets.Difficulty.Utils;
@@ -36,19 +35,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         private double skillMultiplierSnap => 70.9;
         private double skillMultiplierAgility => 2.35;
         private double skillMultiplierFlow => 243.0;
-        private double skillMultiplierTotal => 1.12;
+        private double skillMultiplierTotal => 0.78;
         private double combinedSnapNormExponent => 1.2;
-
-        /// <summary>
-        /// The number of sections with the highest strains, which the peak strain reductions will apply to.
-        /// This is done in order to decrease their impact on the overall difficulty of the map for this skill.
-        /// </summary>
-        private int reducedSectionTime => 4000;
-
-        /// <summary>
-        /// The baseline multiplier applied to the section with the biggest strain.
-        /// </summary>
-        private double reducedStrainBaseline => 0.727;
 
         private readonly List<double> sliderStrains = new List<double>();
 
@@ -158,7 +146,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double difficulty = 0;
             double time = 0;
 
-            var strains = getReducedStrainPeaks();
+            var strains = getStrainPeaks();
 
             // Difficulty is a continuous weighted sum of the sorted strains
             foreach (StrainPeak strain in strains)
@@ -192,42 +180,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         }
 
         /// <summary>
-        /// Returns a sorted enumerable of strain peaks with the highest values reduced.
+        /// Returns a sorted enumerable of strain peaks.
         /// </summary>
         /// <returns></returns>
-        private IEnumerable<StrainPeak> getReducedStrainPeaks()
+        private IEnumerable<StrainPeak> getStrainPeaks()
         {
             // Sections with 0 strain are excluded to avoid worst-case time complexity of the following sort (e.g. /b/2351871).
             // These sections will not contribute to the difficulty.
             var peaks = GetCurrentStrainPeaks().Where(p => p.Value > 0);
 
             List<StrainPeak> strains = peaks.OrderByDescending(p => p.Value).ToList();
-
-            const int chunk_size = 20;
-            double time = 0;
-            int strainsToRemove = 0; // All strains are removed at the end for optimization purposes
-
-            // We are reducing the highest strains first to account for extreme difficulty spikes
-            // Strains are split into 20ms chunks to try to mitigate inconsistencies caused by reducing strains
-            while (strains.Count > strainsToRemove && time < reducedSectionTime)
-            {
-                StrainPeak strain = strains[strainsToRemove];
-
-                for (double addedTime = 0; addedTime < strain.SectionLength; addedTime += chunk_size)
-                {
-                    double scale = Math.Log10(Interpolation.Lerp(1, 10, Math.Clamp((time + addedTime) / reducedSectionTime, 0, 1)));
-
-                    strains.Add(new StrainPeak(
-                        strain.Value * Interpolation.Lerp(reducedStrainBaseline, 1.0, scale),
-                        Math.Min(chunk_size, strain.SectionLength - addedTime)
-                    ));
-                }
-
-                time += strain.SectionLength;
-                strainsToRemove++;
-            }
-
-            strains.RemoveRange(0, strainsToRemove);
 
             return strains.OrderByDescending(p => p.Value);
         }
@@ -236,23 +198,21 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         {
             double bonus = 0;
 
-            var strains = getReducedStrainPeaks();
-            double time = -1;
+            var strains = getStrainPeaks();
 
             foreach (StrainPeak strain in strains)
             {
-                double multiplier = LengthBonusMultiplier(time + (strain.SectionLength / MaxSectionLength)) - LengthBonusMultiplier(time);
+                double multiplier = strain.SectionLength / MaxSectionLength;
 
                 double currStrainBonus = strain.Value * multiplier;
 
                 bonus += currStrainBonus;
-                time += strain.SectionLength / MaxSectionLength;
             }
 
-            return bonus * lengthBonusMultiplier;
+            return bonus * 0.05;
         }
 
         // https://www.desmos.com/calculator/secrjaywao
-        public static double LengthBonusMultiplier(double strains) => Math.Min(0.5, strains / 500.0) + (strains > 250 ? Math.Log(strains / 500.0 + 0.5) : 0.0);
+        public static double LengthBonusMultiplier(double time) => time;
     }
 }
