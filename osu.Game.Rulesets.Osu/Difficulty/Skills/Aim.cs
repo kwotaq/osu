@@ -202,14 +202,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             foreach (StrainPeak strain in strains)
             {
-                double multiplier = strain.SectionLength / MaxSectionLength;
-
-                double currStrainBonus = strain.Value * multiplier;
-
-                bonus += currStrainBonus;
+                bonus += strain.Value * strain.SectionLength;
             }
 
-            return bonus * 0.05;
+            return bonus * 0.00013;
         }
     }
 }

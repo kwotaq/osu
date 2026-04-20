@@ -57,19 +57,22 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             var flashlight = skills.OfType<Flashlight>().SingleOrDefault();
             var reading = skills.OfType<Reading>().Single();
 
-            double aimDifficultyValue = aim.DifficultyValue() + aim.LengthBonus();
-            double aimNoSlidersDifficultyValue = aimWithoutSliders.DifficultyValue() + aimWithoutSliders.LengthBonus();
+            double aimRawDifficultyValue = aim.DifficultyValue();
+            double aimNoSlidersRawDifficultyValue = aimWithoutSliders.DifficultyValue();
+
+            double aimDifficultyValue = aimRawDifficultyValue + aim.LengthBonus();
+            double aimNoSlidersDifficultyValue = aimNoSlidersRawDifficultyValue + aimWithoutSliders.LengthBonus();
             double speedDifficultyValue = speed.DifficultyValue();
             double readingDifficultyValue = reading.DifficultyValue();
 
-            double aimDifficultStrainCount = aim.CountTopWeightedStrains(aimDifficultyValue);
+            double aimDifficultStrainCount = aim.CountTopWeightedStrains(aimRawDifficultyValue);
             double speedDifficultStrainCount = speed.CountTopWeightedObjectDifficulties(speedDifficultyValue);
             double readingDifficultNoteCount = reading.CountTopWeightedObjectDifficulties(readingDifficultyValue);
 
             double speedNotes = speed.RelevantNoteCount();
 
-            double aimNoSlidersTopWeightedSliderCount = aimWithoutSliders.CountTopWeightedSliders(aimNoSlidersDifficultyValue);
-            double aimNoSlidersDifficultStrainCount = aimWithoutSliders.CountTopWeightedStrains(aimNoSlidersDifficultyValue);
+            double aimNoSlidersTopWeightedSliderCount = aimWithoutSliders.CountTopWeightedSliders(aimNoSlidersRawDifficultyValue);
+            double aimNoSlidersDifficultStrainCount = aimWithoutSliders.CountTopWeightedStrains(aimNoSlidersRawDifficultyValue);
 
             double aimTopWeightedSliderFactor = aimNoSlidersTopWeightedSliderCount / Math.Max(1, aimNoSlidersDifficultStrainCount - aimNoSlidersTopWeightedSliderCount);
 
