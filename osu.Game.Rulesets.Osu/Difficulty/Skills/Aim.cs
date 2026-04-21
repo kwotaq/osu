@@ -199,13 +199,20 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double bonus = 0;
 
             var strains = getStrainPeaks();
+            double time = 1;
 
             foreach (StrainPeak strain in strains)
             {
-                bonus += strain.Value * strain.SectionLength;
+                double multiplier = LengthBonusFormula(time + strain.SectionLength) - LengthBonusFormula(time);
+
+                bonus += strain.Value * multiplier;
+                time += strain.SectionLength;
             }
 
-            return bonus * 0.00013;
+            return bonus * 1.6;
         }
+
+        // https://www.desmos.com/calculator/secrjaywao
+        public static double LengthBonusFormula(double ms) => Math.Pow(ms / 1000, 0.25);
     }
 }
