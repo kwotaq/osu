@@ -205,14 +205,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             {
                 double multiplier = LengthBonusFormula(time + strain.SectionLength) - LengthBonusFormula(time);
 
-                bonus += Math.Pow(strain.Value, 1.35) * multiplier;
+                bonus += Math.Pow(strain.Value, 1.3) * multiplier;
                 time += strain.SectionLength;
             }
 
-            return bonus * 0.17;
+            return bonus * 0.141;
         }
 
         // https://www.desmos.com/calculator/secrjaywao
-        public static double LengthBonusFormula(double ms) => Math.Pow(ms / 1000, 0.3);
+        public static double LengthBonusFormula(double ms) => Math.Pow(ms / 1000, 0.45);
     }
 }
