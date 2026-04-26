@@ -88,7 +88,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 wideAngleBonus *= 0.25 + 0.75 * (1 - Math.Min(wideAngleBonus, Math.Pow(calcAngleWideness(lastAngle), 3)));
 
                 // Rescaling velocity for the wide angle bonus
-                const double wide_angle_time_scale = 1.45;
+                const double wide_angle_time_scale = 2;
                 double wideAngleCurrVelocity = currDistance / Math.Pow(osuCurrObj.AdjustedDeltaTime, wide_angle_time_scale);
                 double wideAnglePrevVelocity = prevDistance / Math.Pow(osuLastObj.AdjustedDeltaTime, wide_angle_time_scale);
 
@@ -116,7 +116,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 }
 
                 // Add in acute angle bonus or wide angle bonus, whichever is larger.
-                aimStrain += Math.Max(acuteAngleBonus * acute_angle_multiplier, wideAngleBonus * wide_angle_multiplier);
+                aimStrain += Math.Max(acuteAngleBonus * acute_angle_multiplier, wideAngleBonus * 120);
 
                 // Apply wiggle bonus for jumps that are [radius, 3*diameter] in distance, with < 110 angle
                 // https://www.desmos.com/calculator/dp0v0nvowc
@@ -162,8 +162,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             // Apply high circle size bonus
             aimStrain *= osuCurrObj.SmallCircleBonus;
-
-            aimStrain *= highBpmBonus(osuCurrObj.AdjustedDeltaTime);
 
             return aimStrain;
         }
