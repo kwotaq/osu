@@ -22,6 +22,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             if (current.BaseObject is Spinner || current.Index <= 1 || current.Previous(0).BaseObject is Spinner)
                 return 0;
 
+            var osuNextObj = (OsuDifficultyHitObject?)current.Next(0);
             var osuCurrObj = (OsuDifficultyHitObject)current;
             var osuLastObj = (OsuDifficultyHitObject)current.Previous(0);
             var osuLastLastObj = (OsuDifficultyHitObject)current.Previous(1);
@@ -46,8 +47,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             // We use reduced CS bonus here because the bonus was made for an evaluator with a different d/t scaling
             flowDifficulty *= Math.Sqrt(osuCurrObj.SmallCircleBonus);
 
+            // Final velocity is being raised to a power because flow difficulty scales harder with both high distance and time, and we want to account for that
+            flowDifficulty = Math.Pow(flowDifficulty, 1.35);
+
             // Rhythm changes are harder to flow
-            flowDifficulty *= 1 + Math.Min(0.25,
+            flowDifficulty *= 1 + Math.Min(0.15,
                 Math.Pow((Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) - Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime)) / 50, 4));
 
             if (osuCurrObj.Angle != null && osuLastObj.Angle != null)
@@ -72,12 +76,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 overlappedNotesWeight = 1 - o1 * o2 * o3;
             }
 
-            if (osuCurrObj.Angle != null)
+            if (osuCurrObj.Angle != null && osuNextObj?.Angle != null)
             {
                 // Acute angles are also hard to flow
+                // todo: explain why min(curr,next)
                 flowDifficulty += currVelocity *
-                                  SnapAimEvaluator.CalcAngleAcuteness(osuCurrObj.Angle.Value) *
-                                  overlappedNotesWeight;
+                                  Math.Min(SnapAimEvaluator.CalcAngleAcuteness(osuCurrObj.Angle.Value), SnapAimEvaluator.CalcAngleAcuteness(osuNextObj.Angle.Value)) *
+                                  calculateOverlapWeight(osuNextObj, osuCurrObj, osuLastObj) *
+                                  1.5;
             }
 
             if (Math.Max(prevVelocity, currVelocity) != 0)
@@ -96,7 +102,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
                 flowDifficulty += overlapVelocityBuff *
                                   distRatio *
-                                  overlappedNotesWeight *
+                                  calculateOverlapWeight(osuCurrObj, osuLastObj, osuLastLastObj) *
                                   velocity_change_multiplier;
             }
 
@@ -106,11 +112,18 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 flowDifficulty += osuCurrObj.TravelDistance / osuCurrObj.TravelTime;
             }
 
-            // Final velocity is being raised to a power because flow difficulty scales harder with both high distance and time, and we want to account for that
-            flowDifficulty = Math.Pow(flowDifficulty, 1.2);
-
             // Reduce difficulty for low spacing since spacing below radius is always to be flowed
             return flowDifficulty * DifficultyCalculationUtils.Smootherstep(currDistance, 0, OsuDifficultyHitObject.NORMALISED_RADIUS);
+        }
+
+        // If all three notes are overlapping - don't reward bonuses as you don't have to do additional movement
+        private static double calculateOverlapWeight(OsuDifficultyHitObject first, OsuDifficultyHitObject second, OsuDifficultyHitObject third)
+        {
+            double o1 = calculateOverlapFactor(first, second);
+            double o2 = calculateOverlapFactor(first, third);
+            double o3 = calculateOverlapFactor(second, third);
+
+            return 1 - o1 * o2 * o3;
         }
 
         private static double calculateOverlapFactor(OsuDifficultyHitObject first, OsuDifficultyHitObject second)

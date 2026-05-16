@@ -28,7 +28,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             double distanceScaled = Math.Min(distance, distance_cap) / distance_cap;
 
-            double agilityDifficulty = distanceScaled * 1000 / osuCurrObj.AdjustedDeltaTime;
+            double agilityDifficulty = 1 * 1000 / osuCurrObj.AdjustedDeltaTime;
 
             agilityDifficulty *= Math.Pow(osuCurrObj.SmallCircleBonus, 1.5);
 
