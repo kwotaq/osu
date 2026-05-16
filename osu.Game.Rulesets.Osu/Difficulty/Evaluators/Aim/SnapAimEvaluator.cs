@@ -113,7 +113,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 }
 
                 // Add in acute angle bonus or wide angle bonus, whichever is larger.
-                snapDifficulty += Math.Max(acuteAngleBonus * acute_angle_multiplier, wideAngleBonus * 120);
+                snapDifficulty += Math.Max(acuteAngleBonus * 3.0, wideAngleBonus * 120);
 
                 // Apply wiggle bonus for jumps that are [radius, 3*diameter] in distance, with < 110 angle
                 // https://www.desmos.com/calculator/dp0v0nvowc
