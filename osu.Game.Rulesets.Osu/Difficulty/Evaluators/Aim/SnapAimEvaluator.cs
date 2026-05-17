@@ -85,7 +85,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 double wideAngleBonus = calcAngleWideness(currAngle);
 
                 // Rescaling velocity for the wide angle bonus
-                const double wide_angle_time_scale = 2;
+                const double wide_angle_time_scale = 2.2;
                 double wideAngleCurrVelocity = currDistance / Math.Pow(osuCurrObj.AdjustedDeltaTime, wide_angle_time_scale);
                 double wideAnglePrevVelocity = prevDistance / Math.Pow(osuLastObj.AdjustedDeltaTime, wide_angle_time_scale);
 
@@ -113,7 +113,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 }
 
                 // Add in acute angle bonus or wide angle bonus, whichever is larger.
-                snapDifficulty += Math.Max(acuteAngleBonus * 3.0, wideAngleBonus * 120);
+                snapDifficulty += Math.Max(acuteAngleBonus * 3.0, wideAngleBonus * 320);
 
                 // Apply wiggle bonus for jumps that are [radius, 3*diameter] in distance, with < 110 angle
                 // https://www.desmos.com/calculator/dp0v0nvowc
@@ -147,14 +147,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 // Penalize for rhythm changes.
                 velocityChangeBonus *= Math.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), 2);
 
-                snapDifficulty += velocityChangeBonus * velocity_change_multiplier;
+                snapDifficulty += velocityChangeBonus * 0.5;
             }
 
             // Reward sliders based on velocity.
             if (osuCurrObj.BaseObject is Slider && withSliderTravelDistance)
             {
                 double sliderBonus = osuCurrObj.TravelDistance / osuCurrObj.TravelTime;
-                snapDifficulty += (sliderBonus < 1 ? sliderBonus : Math.Pow(sliderBonus, 0.75)) * slider_multiplier;
+                snapDifficulty += (sliderBonus < 1 ? sliderBonus : Math.Pow(sliderBonus, 0.75)) * 0.6;
             }
 
             // Apply high circle size bonus
