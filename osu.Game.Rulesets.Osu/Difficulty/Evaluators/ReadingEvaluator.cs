@@ -7,6 +7,7 @@ using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Osu.Objects;
+using osuTK;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 {
@@ -30,6 +31,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             double constantAngleNerfFactor = getConstantAngleNerfFactor(currObj);
 
+            double overlapDifficulty = calculateOverlapDifficulty(currObj, hidden);
+
+            // Console.Out.WriteLine(spacialVisibilityDifficulty);
+
             double noteDensityDifficulty = calculateDensityDifficulty(nextObj, velocity, constantAngleNerfFactor, pastObjectDifficultyInfluence, currentVisibleObjectDensity);
 
             double hiddenDifficulty = hidden
@@ -38,7 +43,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             double preemptDifficulty = calculatePreemptDifficulty(velocity, constantAngleNerfFactor, currObj.Preempt);
 
-            double readingDifficulty = DiffUtils.Norm(1.5, preemptDifficulty, hiddenDifficulty, noteDensityDifficulty);
+            double readingDifficulty = DiffUtils.Norm(1.5, preemptDifficulty, hiddenDifficulty, noteDensityDifficulty, overlapDifficulty);
 
             // Having less time to process information is harder
             readingDifficulty *= highBpmBonus(currObj.AdjustedDeltaTime);
@@ -138,6 +143,120 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 hiddenDifficulty += hidden_multiplier * 2500 / DiffUtils.Pow(currObj.AdjustedDeltaTime, 1.5); // Perfect stacks are harder the less time between notes
 
             return hiddenDifficulty;
+        }
+
+        private static double calculateOverlapDifficulty(OsuDifficultyHitObject currObj, bool hidden)
+        {
+            double accumulatedOverlapness = 0;
+            double distanceChangeSum = 0;
+            var currBaseObj = (OsuHitObject)currObj.BaseObject;
+            double overlapLimit = ((OsuHitObject)currObj.BaseObject).Radius * 1.7;
+
+            var pathPositions = new List<Vector2>();
+
+            if (currBaseObj is Slider slider)
+            {
+                slider.Path.GetPathToProgress(pathPositions, 0, 1);
+            }
+
+            double prevDistanceChange = 0;
+            double prevDistanceChangeDelta = 0;
+
+            foreach (var loopObj in retrievePastVisibleObjects(currObj))
+            {
+                var loopBaseObj = (OsuHitObject)loopObj.BaseObject;
+
+                var loopPathPositions = new List<Vector2>();
+
+                if (loopBaseObj is Slider loopSlider)
+                {
+                    loopSlider.Path.GetPathToProgress(loopPathPositions, 0, 1);
+                }
+
+                double loopObjVisibility = currObj.OpacityAt(loopObj.BaseObject.StartTime, hidden);
+
+                double distance = (loopBaseObj.StackedPosition - currBaseObj.StackedPosition).Length;
+
+                double loopDifficulty = Math.Max(0, overlapLimit - distance);
+
+                if (loopObj.BaseObject != (OsuHitObject)currObj.Previous(0).BaseObject)
+                {
+                    foreach (var pos in pathPositions)
+                    {
+                        var pathPosition = currBaseObj.StackedPosition + pos;
+                        double bodyDistance = (loopBaseObj.StackedPosition - pathPosition).Length;
+                        double bodyOverlap = Math.Max(0, overlapLimit - bodyDistance);
+
+                        loopDifficulty = Math.Max(loopDifficulty, bodyOverlap);
+                    }
+
+                    foreach (var loopPos in loopPathPositions)
+                    {
+                        var pathPosition = loopBaseObj.StackedPosition + loopPos;
+                        double bodyDistance = (pathPosition - currBaseObj.StackedPosition).Length;
+                        double bodyOverlap = Math.Max(0, overlapLimit - bodyDistance);
+
+                        loopDifficulty = Math.Max(loopDifficulty, bodyOverlap);
+                    }
+
+                    if (currBaseObj is Slider && loopBaseObj is Slider)
+                    {
+                        foreach (var pos in pathPositions)
+                        {
+                            var pathPosition = currBaseObj.StackedPosition + pos;
+                            double bodyOverlap = 0;
+
+                            foreach (var loopPos in loopPathPositions)
+                            {
+                                var loopPathPosition = loopBaseObj.StackedPosition + loopPos;
+                                double bodyDistance = (loopPathPosition - pathPosition).Length;
+                                bodyOverlap += Math.Max(0, overlapLimit - bodyDistance) / loopPathPositions.Count;
+                            }
+
+                            loopDifficulty = Math.Max(loopDifficulty, bodyOverlap);
+                        }
+                    }
+                }
+
+                loopDifficulty = Math.Pow(loopDifficulty, 2) * 0.001;
+
+                double distanceChange = Math.Max(0, distance - overlapLimit);
+                double distanceChangeDelta = Math.Abs(distanceChange - prevDistanceChange);
+
+                double repetition = DiffUtils.Smootherstep(Math.Abs(distanceChangeDelta - prevDistanceChangeDelta), 0, 100);
+                prevDistanceChangeDelta = distanceChangeDelta;
+
+                distanceChangeSum += distanceChange;
+
+                double distanceChangeFactor = DiffUtils.Smootherstep(distanceChangeSum, 0, 50);
+
+                bool notStacked = loopObj.LazyJumpDistance > OsuDifficultyHitObject.NORMALISED_DIAMETER;
+                prevDistanceChange = notStacked ? distanceChange : prevDistanceChange;
+
+                if (Math.Max(currObj.AdjustedDeltaTime, loopObj.AdjustedDeltaTime) < 1.1 * Math.Min(currObj.AdjustedDeltaTime, loopObj.AdjustedDeltaTime) || notStacked)
+                    loopDifficulty *= distanceChangeFactor;
+
+                if (distanceChangeFactor > 0)
+                {
+                    loopDifficulty *= repetition * 10;
+                }
+
+                loopDifficulty *= Math.Pow(loopObjVisibility, 4);
+
+                // Account less for objects close to the max reading window
+                double timeBetweenCurrAndLoopObj = currObj.StartTime - loopObj.StartTime;
+                double timeNerfFactor = getTimeNerfFactor(timeBetweenCurrAndLoopObj);
+
+                loopDifficulty *= timeNerfFactor;
+                accumulatedOverlapness += loopDifficulty;
+            }
+
+            double overlapDifficulty = Math.Pow(Math.Max(0, accumulatedOverlapness), 0.3) * 2200;
+
+            // The longer a note is overlapped the more time you have time to process it
+            overlapDifficulty /= currObj.Preempt;
+
+            return overlapDifficulty;
         }
 
         private static double getPastObjectDifficultyInfluence(OsuDifficultyHitObject currObj)
