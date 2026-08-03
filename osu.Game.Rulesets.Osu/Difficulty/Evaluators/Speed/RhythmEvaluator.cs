@@ -110,10 +110,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
                 {
                     if (deltaDifference > deltaDifferenceEpsilon)
                     {
-                        // bpm change is into slider, this is easy acc window
-                        if (currObj.BaseObject is Slider)
-                            effectiveDifficulty *= 0.5;
-
                         // repeated island polarity (2 -> 4, 3 -> 5)
                         if (island.IsSimilarPolarity(previousIsland, deltaDifferenceEpsilon))
                             effectiveDifficulty *= 0.5;
