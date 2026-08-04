@@ -152,11 +152,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             var currBaseObj = (OsuHitObject)currObj.BaseObject;
             double overlapLimit = ((OsuHitObject)currObj.BaseObject).Radius * 1.7;
 
-            var pathPositions = new List<Vector2>();
+            var currPathPositions = new List<Vector2>();
 
             if (currBaseObj is Slider slider)
             {
-                slider.Path.GetPathToProgress(pathPositions, 0, 1);
+                slider.Path.GetPathToProgress(currPathPositions, 0, 1);
             }
 
             double prevDistanceChange = 0;
@@ -179,42 +179,42 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 double loopDifficulty = Math.Max(0, overlapLimit - distance);
 
-                if (loopObj.BaseObject != (OsuHitObject)currObj.Previous(0).BaseObject)
+                // circle over slider body
+                foreach (var pos in currPathPositions)
                 {
-                    foreach (var pos in pathPositions)
+                    var pathPosition = currBaseObj.StackedPosition + pos;
+                    double bodyDistance = (loopBaseObj.StackedPosition - pathPosition).Length;
+                    double bodyOverlap = Math.Max(0, overlapLimit - bodyDistance);
+
+                    loopDifficulty = Math.Max(loopDifficulty, bodyOverlap) * 0.4;
+                }
+
+                // slider body over circle
+                foreach (var loopPos in loopPathPositions)
+                {
+                    var pathPosition = loopBaseObj.StackedPosition + loopPos;
+                    double bodyDistance = (pathPosition - currBaseObj.StackedPosition).Length;
+                    double bodyOverlap = Math.Max(0, overlapLimit - bodyDistance);
+
+                    loopDifficulty = Math.Max(loopDifficulty, bodyOverlap) * 0.8;
+                }
+
+                // slider body over slider body
+                if (currBaseObj is Slider && loopBaseObj is Slider)
+                {
+                    foreach (var pos in currPathPositions)
                     {
                         var pathPosition = currBaseObj.StackedPosition + pos;
-                        double bodyDistance = (loopBaseObj.StackedPosition - pathPosition).Length;
-                        double bodyOverlap = Math.Max(0, overlapLimit - bodyDistance);
+                        double bodyOverlap = 0;
 
-                        loopDifficulty = Math.Max(loopDifficulty, bodyOverlap);
-                    }
-
-                    foreach (var loopPos in loopPathPositions)
-                    {
-                        var pathPosition = loopBaseObj.StackedPosition + loopPos;
-                        double bodyDistance = (pathPosition - currBaseObj.StackedPosition).Length;
-                        double bodyOverlap = Math.Max(0, overlapLimit - bodyDistance);
-
-                        loopDifficulty = Math.Max(loopDifficulty, bodyOverlap);
-                    }
-
-                    if (currBaseObj is Slider && loopBaseObj is Slider)
-                    {
-                        foreach (var pos in pathPositions)
+                        foreach (var loopPos in loopPathPositions)
                         {
-                            var pathPosition = currBaseObj.StackedPosition + pos;
-                            double bodyOverlap = 0;
-
-                            foreach (var loopPos in loopPathPositions)
-                            {
-                                var loopPathPosition = loopBaseObj.StackedPosition + loopPos;
-                                double bodyDistance = (loopPathPosition - pathPosition).Length;
-                                bodyOverlap += Math.Max(0, overlapLimit - bodyDistance) / loopPathPositions.Count;
-                            }
-
-                            loopDifficulty = Math.Max(loopDifficulty, bodyOverlap);
+                            var loopPathPosition = loopBaseObj.StackedPosition + loopPos;
+                            double bodyDistance = (loopPathPosition - pathPosition).Length;
+                            bodyOverlap += Math.Max(0, overlapLimit - bodyDistance) / loopPathPositions.Count;
                         }
+
+                        loopDifficulty = Math.Max(loopDifficulty, bodyOverlap);
                     }
                 }
 
