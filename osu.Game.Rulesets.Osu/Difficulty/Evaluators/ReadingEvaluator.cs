@@ -147,9 +147,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
         private static double calculateOverlapDifficulty(OsuDifficultyHitObject currObj, bool hidden)
         {
-            double accumulatedOverlapness = 0;
-            double distanceChangeSum = 0;
+            double totalOverlapDifficulty = 0;
             var currBaseObj = (OsuHitObject)currObj.BaseObject;
+
+            // Consider the limit at which notes overlapping becomes irrelevant reading-wise at over a radius but less than a diameter
             double overlapLimit = ((OsuHitObject)currObj.BaseObject).Radius * 1.7;
 
             var currPathPositions = new List<Vector2>();
@@ -159,6 +160,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 slider.Path.GetPathToProgress(currPathPositions, 0, 1);
             }
 
+            double distanceChangeSum = 0;
             double prevDistanceChange = 0;
             double prevDistanceChangeDelta = 0;
 
@@ -186,7 +188,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                     double bodyDistance = (loopBaseObj.StackedPosition - pathPosition).Length;
                     double bodyOverlap = Math.Max(0, overlapLimit - bodyDistance);
 
-                    loopDifficulty = Math.Max(loopDifficulty, bodyOverlap) * 0.4;
+                    loopDifficulty = Math.Max(loopDifficulty, bodyOverlap) * 0.25;
                 }
 
                 // slider body over circle
@@ -196,7 +198,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                     double bodyDistance = (pathPosition - currBaseObj.StackedPosition).Length;
                     double bodyOverlap = Math.Max(0, overlapLimit - bodyDistance);
 
-                    loopDifficulty = Math.Max(loopDifficulty, bodyOverlap) * 0.8;
+                    loopDifficulty = Math.Max(loopDifficulty, bodyOverlap) * 0.4;
                 }
 
                 // slider body over slider body
@@ -218,6 +220,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                     }
                 }
 
+                // Buff notes the more they overlap
                 loopDifficulty = Math.Pow(loopDifficulty, 2) * 0.001;
 
                 double distanceChange = Math.Max(0, distance - overlapLimit);
@@ -230,28 +233,34 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 double distanceChangeFactor = DiffUtils.Smootherstep(distanceChangeSum, 0, 50);
 
-                bool notStacked = loopObj.LazyJumpDistance > OsuDifficultyHitObject.NORMALISED_DIAMETER;
+                bool notStacked = loopObj.LazyJumpDistance > OsuDifficultyHitObject.NORMALISED_RADIUS * 1.7;
                 prevDistanceChange = notStacked ? distanceChange : prevDistanceChange;
-
-                if (Math.Max(currObj.AdjustedDeltaTime, loopObj.AdjustedDeltaTime) < 1.1 * Math.Min(currObj.AdjustedDeltaTime, loopObj.AdjustedDeltaTime) || notStacked)
-                    loopDifficulty *= distanceChangeFactor;
 
                 if (distanceChangeFactor > 0)
                 {
                     loopDifficulty *= repetition * 10;
                 }
 
-                loopDifficulty *= Math.Pow(loopObjVisibility, 4);
-
                 // Account less for objects close to the max reading window
                 double timeBetweenCurrAndLoopObj = currObj.StartTime - loopObj.StartTime;
                 double timeNerfFactor = getTimeNerfFactor(timeBetweenCurrAndLoopObj);
 
                 loopDifficulty *= timeNerfFactor;
-                accumulatedOverlapness += loopDifficulty;
+
+                // Apply repetition and visibility nerfs only if the overlapping note has had movement between it and the current one or
+                // the rhythms aren't the same
+                if (Math.Max(currObj.AdjustedDeltaTime, loopObj.AdjustedDeltaTime) < 1.1 * Math.Min(currObj.AdjustedDeltaTime, loopObj.AdjustedDeltaTime) || notStacked)
+                {
+                    loopDifficulty *= distanceChangeFactor;
+
+                    // Greatly reduce difficulty depending on the visibility of the overlapping object
+                    loopDifficulty *= Math.Pow(loopObjVisibility, 4);
+                }
+
+                totalOverlapDifficulty += loopDifficulty;
             }
 
-            double overlapDifficulty = Math.Pow(Math.Max(0, accumulatedOverlapness), 0.3) * 2200;
+            double overlapDifficulty = Math.Pow(Math.Max(0, totalOverlapDifficulty), 0.3) * 2200;
 
             // The longer a note is overlapped the more time you have time to process it
             overlapDifficulty /= currObj.Preempt;
