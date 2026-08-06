@@ -153,14 +153,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             // Consider the limit at which notes overlapping becomes irrelevant reading-wise at over a radius but less than a diameter
             double overlapLimit = ((OsuHitObject)currObj.BaseObject).Radius * 1.7;
 
-            var currPathPositions = new List<Vector2>();
+            var currSliderPathPositions = new List<Vector2>();
 
             if (currBaseObj is Slider slider)
             {
-                slider.Path.GetPathToProgress(currPathPositions, 0, 1);
+                slider.Path.GetPathToProgress(currSliderPathPositions, 0, 1);
             }
 
-            double distanceChangeSum = 0;
+            double nonOverlappedDistanceSum = 0;
             double prevDistanceChange = 0;
             double prevDistanceChangeDelta = 0;
 
@@ -168,35 +168,35 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             {
                 var loopBaseObj = (OsuHitObject)loopObj.BaseObject;
 
-                var loopPathPositions = new List<Vector2>();
+                var loopSliderPathPositions = new List<Vector2>();
 
                 if (loopBaseObj is Slider loopSlider)
                 {
-                    loopSlider.Path.GetPathToProgress(loopPathPositions, 0, 1);
+                    loopSlider.Path.GetPathToProgress(loopSliderPathPositions, 0, 1);
                 }
 
                 double loopObjVisibility = currObj.OpacityAt(loopObj.BaseObject.StartTime, hidden);
 
-                double distance = (loopBaseObj.StackedPosition - currBaseObj.StackedPosition).Length;
+                double distanceFromCurrent = (loopBaseObj.StackedPosition - currBaseObj.StackedPosition).Length;
 
-                double loopDifficulty = Math.Max(0, overlapLimit - distance);
+                double loopDifficulty = Math.Max(0, overlapLimit - distanceFromCurrent);
 
                 // circle over slider body
-                foreach (var pos in currPathPositions)
+                foreach (var pos in currSliderPathPositions)
                 {
-                    var pathPosition = currBaseObj.StackedPosition + pos;
-                    double bodyDistance = (loopBaseObj.StackedPosition - pathPosition).Length;
-                    double bodyOverlap = Math.Max(0, overlapLimit - bodyDistance);
+                    var bodyPosition = currBaseObj.StackedPosition + pos;
+                    double bodyDistanceFromCurrent = (loopBaseObj.StackedPosition - bodyPosition).Length;
+                    double overlapToCurrent = Math.Max(0, overlapLimit - bodyDistanceFromCurrent);
 
-                    loopDifficulty = Math.Max(loopDifficulty, bodyOverlap) * 0.25;
+                    loopDifficulty = Math.Max(loopDifficulty, overlapToCurrent) * 0.25;
                 }
 
                 // slider body over circle
-                foreach (var loopPos in loopPathPositions)
+                foreach (var loopPos in loopSliderPathPositions)
                 {
-                    var pathPosition = loopBaseObj.StackedPosition + loopPos;
-                    double bodyDistance = (pathPosition - currBaseObj.StackedPosition).Length;
-                    double bodyOverlap = Math.Max(0, overlapLimit - bodyDistance);
+                    var bodyPosition = loopBaseObj.StackedPosition + loopPos;
+                    double bodyDistanceFromCurrent = (bodyPosition - currBaseObj.StackedPosition).Length;
+                    double bodyOverlap = Math.Max(0, overlapLimit - bodyDistanceFromCurrent);
 
                     loopDifficulty = Math.Max(loopDifficulty, bodyOverlap) * 0.4;
                 }
@@ -204,16 +204,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 // slider body over slider body
                 if (currBaseObj is Slider && loopBaseObj is Slider)
                 {
-                    foreach (var pos in currPathPositions)
+                    foreach (var pos in currSliderPathPositions)
                     {
-                        var pathPosition = currBaseObj.StackedPosition + pos;
+                        var currSliderBodyPosition = currBaseObj.StackedPosition + pos;
                         double bodyOverlap = 0;
 
-                        foreach (var loopPos in loopPathPositions)
+                        foreach (var loopPos in loopSliderPathPositions)
                         {
-                            var loopPathPosition = loopBaseObj.StackedPosition + loopPos;
-                            double bodyDistance = (loopPathPosition - pathPosition).Length;
-                            bodyOverlap += Math.Max(0, overlapLimit - bodyDistance) / loopPathPositions.Count;
+                            var loopSliderBodyPosition = loopBaseObj.StackedPosition + loopPos;
+                            double bodyDistanceFromCurrent = (loopSliderBodyPosition - currSliderBodyPosition).Length;
+                            bodyOverlap += Math.Max(0, overlapLimit - bodyDistanceFromCurrent) / loopSliderPathPositions.Count;
                         }
 
                         loopDifficulty = Math.Max(loopDifficulty, bodyOverlap);
@@ -223,22 +223,22 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 // Buff notes the more they overlap
                 loopDifficulty = Math.Pow(loopDifficulty, 2) * 0.001;
 
-                double distanceChange = Math.Max(0, distance - overlapLimit);
-                double distanceChangeDelta = Math.Abs(distanceChange - prevDistanceChange);
+                double nonOverlappedDistance = Math.Max(0, distanceFromCurrent - overlapLimit);
+                double distanceChangeDelta = Math.Abs(nonOverlappedDistance - prevDistanceChange);
 
-                double repetition = DiffUtils.Smootherstep(Math.Abs(distanceChangeDelta - prevDistanceChangeDelta), 0, 100);
+                double repetitionFactor = DiffUtils.Smootherstep(Math.Abs(distanceChangeDelta - prevDistanceChangeDelta), 0, 100);
                 prevDistanceChangeDelta = distanceChangeDelta;
 
-                distanceChangeSum += distanceChange;
+                nonOverlappedDistanceSum += nonOverlappedDistance;
 
-                double distanceChangeFactor = DiffUtils.Smootherstep(distanceChangeSum, 0, 50);
+                double distanceChangeFactor = DiffUtils.Smootherstep(nonOverlappedDistanceSum, 0, 50);
 
                 bool notStacked = loopObj.LazyJumpDistance > OsuDifficultyHitObject.NORMALISED_RADIUS * 1.7;
-                prevDistanceChange = notStacked ? distanceChange : prevDistanceChange;
+                prevDistanceChange = notStacked ? nonOverlappedDistance : prevDistanceChange;
 
                 if (distanceChangeFactor > 0)
                 {
-                    loopDifficulty *= repetition * 10;
+                    loopDifficulty *= repetitionFactor * 10;
                 }
 
                 // Account less for objects close to the max reading window
