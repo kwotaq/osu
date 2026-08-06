@@ -233,7 +233,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 double distanceChangeFactor = DiffUtils.Smootherstep(nonOverlappedDistanceSum, 0, 50);
 
-                bool notStacked = loopObj.LazyJumpDistance > OsuDifficultyHitObject.NORMALISED_RADIUS * 1.7;
+                bool notStacked = loopObj.LazyJumpDistance > overlapLimit;
                 prevDistanceChange = notStacked ? nonOverlappedDistance : prevDistanceChange;
 
                 if (distanceChangeFactor > 0)
