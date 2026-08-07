@@ -180,10 +180,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 double loopDifficulty = Math.Max(0, overlapLimit - distanceFromCurrent);
 
                 // circle over slider body
-                loopDifficulty += getBodyOverlapness(currPosition, currSliderPathPositions, loopPosition, overlapLimit, loopDifficulty) * 0.25;
+                loopDifficulty += getBodyOverlapness(currPosition, currSliderPathPositions, loopPosition, overlapLimit, loopDifficulty) * 0.15;
 
                 // slider body over circle
-                loopDifficulty += getBodyOverlapness(loopPosition, loopSliderPathPositions, currPosition, overlapLimit, loopDifficulty) * 0.6;
+                loopDifficulty += getBodyOverlapness(loopPosition, loopSliderPathPositions, currPosition, overlapLimit, loopDifficulty) * 0.3;
 
                 // slider body over slider body
                 double bodyDifficulty = 0;
@@ -226,7 +226,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 if (distanceChangeFactor > 0)
                 {
-                    loopDifficulty *= repetitionFactor * 3;
+                    loopDifficulty *= repetitionFactor * 50;
                 }
 
                 // Account less for objects close to the max reading window
@@ -242,13 +242,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                     loopDifficulty *= distanceChangeFactor;
 
                     // Greatly reduce difficulty depending on the visibility of the overlapping object
-                    loopDifficulty *= Math.Pow(currObj.OpacityAt(loopObj.BaseObject.StartTime, hidden), 4);
+                    loopDifficulty *= Math.Pow(currObj.OpacityAt(loopObj.BaseObject.StartTime, hidden), 2);
                 }
 
                 totalOverlapDifficulty += loopDifficulty;
             }
 
-            double overlapDifficulty = Math.Pow(Math.Max(0, totalOverlapDifficulty), 0.3) * 2200;
+            double overlapDifficulty = Math.Pow(Math.Max(0, totalOverlapDifficulty), 0.3) * 1200;
 
             // The longer a note is overlapped the more time you have time to process it
             overlapDifficulty /= currObj.Preempt;
