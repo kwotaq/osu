@@ -186,7 +186,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                     double bodyDistanceFromCurrent = (loopBaseObj.StackedPosition - bodyPosition).Length;
                     double overlapToCurrent = Math.Max(0, overlapLimit - bodyDistanceFromCurrent);
 
-                    bodyDifficulty = Math.Max(loopDifficulty, overlapToCurrent) * 0.5;
+                    bodyDifficulty = Math.Max(loopDifficulty, overlapToCurrent) * 0.25;
 
                     if (bodyDistanceFromCurrent == 0)
                         break;
@@ -203,7 +203,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                     double bodyDistanceFromCurrent = (bodyPosition - currBaseObj.StackedPosition).Length;
                     double overlapToCurrent = Math.Max(0, overlapLimit - bodyDistanceFromCurrent);
 
-                    bodyDifficulty = Math.Max(loopDifficulty, overlapToCurrent) * 0.4;
+                    bodyDifficulty = Math.Max(loopDifficulty, overlapToCurrent) * 0.6;
 
                     if (bodyDistanceFromCurrent == 0)
                         break;
@@ -252,7 +252,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 if (distanceChangeFactor > 0)
                 {
-                    loopDifficulty *= repetitionFactor * 10;
+                    loopDifficulty *= repetitionFactor * 3;
                 }
 
                 // Account less for objects close to the max reading window
