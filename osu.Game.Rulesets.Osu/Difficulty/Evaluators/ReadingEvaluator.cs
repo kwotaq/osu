@@ -33,8 +33,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             double overlapDifficulty = calculateOverlapDifficulty(currObj, hidden);
 
-            // Console.Out.WriteLine(spacialVisibilityDifficulty);
-
             double noteDensityDifficulty = calculateDensityDifficulty(nextObj, velocity, constantAngleNerfFactor, pastObjectDifficultyInfluence, currentVisibleObjectDensity);
 
             double hiddenDifficulty = hidden
@@ -175,11 +173,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                     loopSlider.Path.GetPathToProgress(loopSliderPathPositions, 0, 1);
                 }
 
-                double loopObjVisibility = currObj.OpacityAt(loopObj.BaseObject.StartTime, hidden);
-
                 double distanceFromCurrent = (loopBaseObj.StackedPosition - currBaseObj.StackedPosition).Length;
 
                 double loopDifficulty = Math.Max(0, overlapLimit - distanceFromCurrent);
+
+                double bodyDifficulty = 0;
 
                 // circle over slider body
                 foreach (var pos in currSliderPathPositions)
@@ -188,18 +186,32 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                     double bodyDistanceFromCurrent = (loopBaseObj.StackedPosition - bodyPosition).Length;
                     double overlapToCurrent = Math.Max(0, overlapLimit - bodyDistanceFromCurrent);
 
-                    loopDifficulty = Math.Max(loopDifficulty, overlapToCurrent) * 0.25;
+                    bodyDifficulty = Math.Max(loopDifficulty, overlapToCurrent) * 0.5;
+
+                    if (bodyDistanceFromCurrent == 0)
+                        break;
                 }
+
+                loopDifficulty += bodyDifficulty;
+
+                bodyDifficulty = 0;
 
                 // slider body over circle
                 foreach (var loopPos in loopSliderPathPositions)
                 {
                     var bodyPosition = loopBaseObj.StackedPosition + loopPos;
                     double bodyDistanceFromCurrent = (bodyPosition - currBaseObj.StackedPosition).Length;
-                    double bodyOverlap = Math.Max(0, overlapLimit - bodyDistanceFromCurrent);
+                    double overlapToCurrent = Math.Max(0, overlapLimit - bodyDistanceFromCurrent);
 
-                    loopDifficulty = Math.Max(loopDifficulty, bodyOverlap) * 0.4;
+                    bodyDifficulty = Math.Max(loopDifficulty, overlapToCurrent) * 0.4;
+
+                    if (bodyDistanceFromCurrent == 0)
+                        break;
                 }
+
+                loopDifficulty += bodyDifficulty;
+
+                bodyDifficulty = 0;
 
                 // slider body over slider body
                 if (currBaseObj is Slider && loopBaseObj is Slider)
@@ -207,18 +219,20 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                     foreach (var pos in currSliderPathPositions)
                     {
                         var currSliderBodyPosition = currBaseObj.StackedPosition + pos;
-                        double bodyOverlap = 0;
+                        double overlapToCurrent = 0;
 
                         foreach (var loopPos in loopSliderPathPositions)
                         {
                             var loopSliderBodyPosition = loopBaseObj.StackedPosition + loopPos;
                             double bodyDistanceFromCurrent = (loopSliderBodyPosition - currSliderBodyPosition).Length;
-                            bodyOverlap += Math.Max(0, overlapLimit - bodyDistanceFromCurrent) / loopSliderPathPositions.Count;
+                            overlapToCurrent += Math.Max(0, overlapLimit - bodyDistanceFromCurrent) / loopSliderPathPositions.Count;
                         }
 
-                        loopDifficulty = Math.Max(loopDifficulty, bodyOverlap);
+                        bodyDifficulty = Math.Max(loopDifficulty, overlapToCurrent);
                     }
                 }
+
+                loopDifficulty += bodyDifficulty;
 
                 // Buff notes the more they overlap
                 loopDifficulty = Math.Pow(loopDifficulty, 2) * 0.001;
@@ -254,7 +268,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                     loopDifficulty *= distanceChangeFactor;
 
                     // Greatly reduce difficulty depending on the visibility of the overlapping object
-                    loopDifficulty *= Math.Pow(loopObjVisibility, 4);
+                    loopDifficulty *= Math.Pow(currObj.OpacityAt(loopObj.BaseObject.StartTime, hidden), 4);
                 }
 
                 totalOverlapDifficulty += loopDifficulty;
