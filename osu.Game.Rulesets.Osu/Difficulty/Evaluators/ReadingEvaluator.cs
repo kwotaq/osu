@@ -214,7 +214,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 double nonOverlappedDistance = Math.Max(0, distanceFromCurrent - overlapLimit);
                 double distanceChangeDelta = Math.Abs(nonOverlappedDistance - prevDistanceChange);
 
-                double repetitionFactor = DiffUtils.Smootherstep(Math.Abs(distanceChangeDelta - prevDistanceChangeDelta), 0, 100);
+                double repetitionFactor = Math.Max(0.2, DiffUtils.Smootherstep(Math.Abs(distanceChangeDelta - prevDistanceChangeDelta), 0, 100));
                 prevDistanceChangeDelta = distanceChangeDelta;
 
                 nonOverlappedDistanceSum += nonOverlappedDistance;
@@ -226,7 +226,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 if (distanceChangeFactor > 0)
                 {
-                    loopDifficulty *= repetitionFactor * 10;
+                    loopDifficulty *= repetitionFactor * 5;
                 }
 
                 // Account less for objects close to the max reading window
