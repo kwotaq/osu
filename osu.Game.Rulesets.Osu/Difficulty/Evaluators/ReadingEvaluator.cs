@@ -226,7 +226,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 if (distanceChangeFactor > 0)
                 {
-                    loopDifficulty *= repetitionFactor * 50;
+                    loopDifficulty *= repetitionFactor * 10;
                 }
 
                 // Account less for objects close to the max reading window
@@ -248,7 +248,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 totalOverlapDifficulty += loopDifficulty;
             }
 
-            double overlapDifficulty = Math.Pow(Math.Max(0, totalOverlapDifficulty), 0.3) * 1200;
+            double overlapDifficulty = Math.Pow(Math.Max(0, totalOverlapDifficulty), 0.3) * 1500;
 
             // The longer a note is overlapped the more time you have time to process it
             overlapDifficulty /= currObj.Preempt;
