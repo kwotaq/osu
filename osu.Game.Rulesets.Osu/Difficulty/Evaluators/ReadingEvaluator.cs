@@ -180,10 +180,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 double loopDifficulty = Math.Max(0, overlapLimit - distanceFromCurrent);
 
                 // circle over slider body
-                loopDifficulty += getBodyOverlapness(currPosition, currSliderPathPositions, loopPosition, overlapLimit, loopDifficulty) * 0.15;
+                loopDifficulty += getBodyOverlapness(currPosition, currSliderPathPositions, loopPosition, overlapLimit, loopDifficulty) * 0.5;
 
                 // slider body over circle
-                loopDifficulty += getBodyOverlapness(loopPosition, loopSliderPathPositions, currPosition, overlapLimit, loopDifficulty) * 0.3;
+                loopDifficulty += getBodyOverlapness(loopPosition, loopSliderPathPositions, currPosition, overlapLimit, loopDifficulty) * 0.5;
 
                 // slider body over slider body
                 double bodyDifficulty = 0;
@@ -214,7 +214,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 double nonOverlappedDistance = Math.Max(0, distanceFromCurrent - overlapLimit);
                 double distanceChangeDelta = Math.Abs(nonOverlappedDistance - prevDistanceChange);
 
-                double repetitionFactor = Math.Max(0.2, DiffUtils.Smootherstep(Math.Abs(distanceChangeDelta - prevDistanceChangeDelta), 0, 100));
+                double repetitionFactor = Math.Max(0.02, DiffUtils.Smootherstep(Math.Abs(distanceChangeDelta - prevDistanceChangeDelta), 0, 100));
                 prevDistanceChangeDelta = distanceChangeDelta;
 
                 nonOverlappedDistanceSum += nonOverlappedDistance;
@@ -248,7 +248,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 totalOverlapDifficulty += loopDifficulty;
             }
 
-            double overlapDifficulty = Math.Pow(Math.Max(0, totalOverlapDifficulty), 0.3) * 1500;
+            double overlapDifficulty = Math.Pow(Math.Max(0, totalOverlapDifficulty), 0.3) * 1600;
 
             // The longer a note is overlapped the more time you have time to process it
             overlapDifficulty /= currObj.Preempt;
