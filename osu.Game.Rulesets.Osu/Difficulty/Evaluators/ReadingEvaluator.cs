@@ -238,12 +238,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 loopDifficulty *= distanceChangeFactor;
 
                 // Greatly reduce difficulty depending on the visibility of the overlapping object
-                loopDifficulty *= Math.Pow(currObj.OpacityAt(loopObj.BaseObject.StartTime, hidden), 2);
+                loopDifficulty *= DiffUtils.Pow(currObj.OpacityAt(loopObj.BaseObject.StartTime, hidden), 2);
 
                 totalOverlapDifficulty += loopDifficulty;
             }
 
-            double overlapDifficulty = Math.Pow(Math.Max(0, totalOverlapDifficulty), 0.3) * 1600;
+            double overlapDifficulty = DiffUtils.Pow(Math.Max(0, totalOverlapDifficulty), 0.3) * 1600;
 
             // The longer a note is overlapped the more time you have time to process it
             overlapDifficulty /= currObj.Preempt;
