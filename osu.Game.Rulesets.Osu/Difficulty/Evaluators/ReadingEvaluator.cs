@@ -235,15 +235,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
                 loopDifficulty *= timeNerfFactor;
 
-                // Apply repetition and visibility nerfs only if
-                // the overlapping note has had movement between it and the current one or the rhythms are the same
-                if (Math.Max(currObj.AdjustedDeltaTime, loopObj.AdjustedDeltaTime) < 1.1 * Math.Min(currObj.AdjustedDeltaTime, loopObj.AdjustedDeltaTime) || notStacked)
-                {
-                    loopDifficulty *= distanceChangeFactor;
+                loopDifficulty *= distanceChangeFactor;
 
-                    // Greatly reduce difficulty depending on the visibility of the overlapping object
-                    loopDifficulty *= Math.Pow(currObj.OpacityAt(loopObj.BaseObject.StartTime, hidden), 2);
-                }
+                // Greatly reduce difficulty depending on the visibility of the overlapping object
+                loopDifficulty *= Math.Pow(currObj.OpacityAt(loopObj.BaseObject.StartTime, hidden), 2);
 
                 totalOverlapDifficulty += loopDifficulty;
             }
