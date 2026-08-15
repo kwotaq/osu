@@ -202,11 +202,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                             overlapToCurrent += Math.Max(0, overlapLimit - bodyDistanceFromCurrent) / loopSliderPathPositions.Count;
                         }
 
-                        bodyDifficulty = Math.Max(loopDifficulty, overlapToCurrent) * 0.1;
+                        bodyDifficulty = Math.Sqrt(Math.Max(loopDifficulty, overlapToCurrent));
                     }
                 }
 
-                loopDifficulty += bodyDifficulty;
+                loopDifficulty += bodyDifficulty * 0.5;
 
                 // Buff notes the more they overlap
                 loopDifficulty = Math.Pow(loopDifficulty, 2) * 0.001;
@@ -214,7 +214,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 double nonOverlappedDistance = Math.Max(0, distanceFromCurrent - overlapLimit);
                 double distanceChangeDelta = Math.Abs(nonOverlappedDistance - prevDistanceChange);
 
-                double repetitionFactor = Math.Max(0.02, DiffUtils.Smootherstep(Math.Abs(distanceChangeDelta - prevDistanceChangeDelta), 0, 100));
+                double repetitionFactor = Math.Max(0.1, DiffUtils.Smootherstep(Math.Abs(distanceChangeDelta - prevDistanceChangeDelta), 0, 100));
                 prevDistanceChangeDelta = distanceChangeDelta;
 
                 nonOverlappedDistanceSum += nonOverlappedDistance;
