@@ -202,7 +202,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                             overlapToCurrent += Math.Max(0, overlapLimit - bodyDistanceFromCurrent) / loopSliderPathPositions.Count;
                         }
 
-                        bodyDifficulty = Math.Max(loopDifficulty, overlapToCurrent);
+                        bodyDifficulty = Math.Max(loopDifficulty, overlapToCurrent) * 0.1;
                     }
                 }
 
