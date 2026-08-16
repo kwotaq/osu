@@ -44,6 +44,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double aimNoSlidersDifficultyValue = aimWithoutSliders.DifficultyValue();
             double aimCheeseDifficultyValue = aimWithCheese.DifficultyValue();
             double speedDifficultyValue = speed.DifficultyValue();
+            double speedNoRhythmDifficultyValue = speed.CalculateNoRhythmDifficulty();
             double readingDifficultyValue = reading.DifficultyValue();
 
             double aimDifficultStrainCount = aim.CountTopWeightedStrains(aimDifficultyValue);
@@ -81,7 +82,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 : 1;
 
             double speedRating = calculateDifficultyRating(speedDifficultyValue);
+            double speedNoRhythmRating = calculateDifficultyRating(speedNoRhythmDifficultyValue);
             double readingRating = calculateDifficultyRating(readingDifficultyValue);
+
+            double rhythmFactor = speedDifficultyValue > 0 ? speedNoRhythmRating / speedRating : 1;
 
             double flashlightRating = 0.0;
 
@@ -116,6 +120,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 ReadingDifficulty = readingRating,
                 SliderFactor = sliderFactor,
                 CheeseFactor = cheeseFactor,
+                RhythmFactor = rhythmFactor,
                 AimDifficultStrainCount = aimDifficultStrainCount,
                 SpeedDifficultStrainCount = speedDifficultStrainCount,
                 ReadingDifficultNoteCount = readingDifficultNoteCount,

@@ -59,6 +59,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         [JsonProperty("slider_factor")]
         public double SliderFactor { get; set; }
 
+        [JsonProperty("rhythm_factor")]
+        public double RhythmFactor { get; set; }
+
         /// <summary>
         /// Describes how much of <see cref="AimDifficulty"/> is contributed to by cheesing patterns.
         /// A value closer to 1.0 indicates most of <see cref="AimDifficulty"/> is contributed by normal gameplay.
