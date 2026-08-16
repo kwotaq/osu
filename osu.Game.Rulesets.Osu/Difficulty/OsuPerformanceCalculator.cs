@@ -284,7 +284,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (score.Mods.Any(h => h is OsuModRelax) || totalDeviation == null)
                 return 0.0;
 
-            const double accuracy_pp_multiplier = 200.0;
+            const double accuracy_pp_multiplier = 180.0;
 
             // Due to the nature of the rhythm difficulty (it's almost never zero) we want to use rhythm factor non-linearly.
             double tappingDifficultyFactor = DiffUtils.Pow(0.98 + Math.Sqrt(attributes.SpeedDifficulty) * DiffUtils.Smootherstep(attributes.RhythmFactor, 1, 0.25), 0.35);
