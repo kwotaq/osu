@@ -30,12 +30,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private double currentStrain;
 
-        protected override double TimeThresholdMinutes => 100;
+        protected override double TimeThresholdMinutes => 500;
 
-        private double skillMultiplierSnap => 360.0;
+        private double skillMultiplierSnap => 345.0;
         private double skillMultiplierAgility => 11.0;
-        private double skillMultiplierFlow => 1100;
-        private double skillMultiplierTotal => 0.92;
+        private double skillMultiplierFlow => 1150;
+        private double skillMultiplierTotal => 0.9;
         private double meanExponent => 1.2;
 
         private readonly List<double> sliderStrains = new List<double>();
@@ -48,15 +48,15 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double baseDeviation = difficulty / skill;
             // at what point does the player lose the ability to aim normally
             // increasing this will like high misscount scores more than ringtone maps, and vice versa
-            const double limit_of_proportion = 0.9;
+            const double limit_of_proportion = 0.7;
             // how quickly does the player lose the ability to aim normally at the limit of proportion
             // increasing this has a similar effect as increasing the limit of proportion, but it changes how significant the effect is across maps
-            const double breakdown_rate = 6;
+            const double breakdown_rate = 7;
             double adjustedDeviation = baseDeviation + Math.Exp(breakdown_rate * (baseDeviation - limit_of_proportion));
 
-            const double contamination_rate = 9e-3;
+            const double contamination_rate = 10e-3;
 
-            const double contamination_scale = 3.35;
+            const double contamination_scale = 3.3;
 
             double cleanProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * adjustedDeviation));
             double contaminatedProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * contamination_scale * adjustedDeviation));
