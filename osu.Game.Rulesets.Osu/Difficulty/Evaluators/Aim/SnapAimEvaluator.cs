@@ -28,10 +28,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             if (current.BaseObject is Spinner || current.Index <= 1 || osuLastObj.BaseObject is Spinner)
                 return 0;
 
-            const double wide_angle_multiplier = 9.67;
+            const double wide_angle_multiplier = 11.0;
             const double acute_angle_multiplier = 2.41;
-            const double slider_multiplier = 1.5;
-            const double velocity_change_multiplier = 0.9;
+            const double slider_multiplier = 2.0;
+            const double velocity_change_multiplier = 0.75;
 
             // WARNING: Increasing this multiplier beyond 1.02 reduces difficulty as distance increases. Refer to the desmos link above the wiggle bonus calculation
             const double wiggle_multiplier = 1.02;
