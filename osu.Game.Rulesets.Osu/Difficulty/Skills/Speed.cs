@@ -47,8 +47,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         {
             const double total_multiplier = 0.8;
             const double burst_multiplier = 2.4;
-            const double stream_multiplier = 0.16;
-            const double stamina_multiplier = 0.058;
+            const double stream_multiplier = 0.2;
+            const double stamina_multiplier = 0.045;
             const double mean_exponent = 1.25;
 
             if (Mods.Any(m => m is OsuModRelax))
