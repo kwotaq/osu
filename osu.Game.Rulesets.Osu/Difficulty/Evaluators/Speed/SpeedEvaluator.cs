@@ -24,7 +24,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
                 return 0;
 
             const double min_speed_bonus = 200; // 200 BPM 1/4th
-            const double speed_balancing_factor = 30;
+            const double speed_balancing_factor = 26;
 
             var osuCurrObj = (OsuDifficultyHitObject)current;
 
@@ -40,7 +40,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
 
             // Add additional scaling bonus for streams/bursts higher than 200bpm
             if (DiffUtils.MillisecondsToBPM(strainTime) > min_speed_bonus)
-                speedBonus = 0.75 * DiffUtils.Pow((DiffUtils.BPMToMilliseconds(min_speed_bonus) - strainTime) / speed_balancing_factor, 3);
+                speedBonus = 0.75 * DiffUtils.Pow((DiffUtils.BPMToMilliseconds(min_speed_bonus) - strainTime) / speed_balancing_factor, 2.5);
 
             // Base difficulty with all bonuses
             double speedDifficulty = (1 + speedBonus) * 1000 / strainTime;
