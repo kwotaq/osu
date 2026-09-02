@@ -30,12 +30,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private double currentStrain;
 
-        protected override double TimeThresholdMinutes => 100;
+        protected override double TimeThresholdMinutes => 2000;
 
-        private double skillMultiplierSnap => 680.0;
-        private double skillMultiplierAgility => 920.0 * 1_000_000;
-        private double skillMultiplierFlow => 1600;
-        private double skillMultiplierTotal => 0.65;
+        private double skillMultiplierSnap => 650.0;
+        private double skillMultiplierAgility => 1100.0 * 1_000_000;
+        private double skillMultiplierFlow => 1500;
+        private double skillMultiplierTotal => 0.7;
         private double meanExponent => 1.2;
 
         private readonly List<double> sliderStrains = new List<double>();

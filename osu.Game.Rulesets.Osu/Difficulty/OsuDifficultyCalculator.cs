@@ -141,7 +141,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
         private double calculateAimDifficultyRating(double difficultyValue) => DiffUtils.Pow(difficultyValue, 0.63) * 0.02275;
 
-        private double calculateDifficultyRating(double difficultyValue) => Math.Sqrt(difficultyValue) * 0.0675;
+        private double calculateDifficultyRating(double difficultyValue) => DiffUtils.Pow(difficultyValue, 0.45) * 0.1;
 
         private double calculateStarRating(double basePerformance)
         {

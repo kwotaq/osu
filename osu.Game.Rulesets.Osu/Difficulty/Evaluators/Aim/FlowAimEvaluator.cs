@@ -62,7 +62,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 double angularVelocity = angleDifferenceAdjusted / (osuCurrObj.AdjustedDeltaTime * 0.1);
 
                 // Low angular velocity flow (angles are consistent) is easier to follow than erratic flow
-                flowDifficulty *= 0.7 + Math.Sqrt(angularVelocity / 150.0);
+                flowDifficulty *= 0.8 + Math.Sqrt(angularVelocity / 270.0);
             }
 
             if (osuCurrObj.Angle != null && osuNextObj?.Angle != null)
