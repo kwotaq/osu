@@ -291,7 +291,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double tappingDifficultyFactor = DiffUtils.Pow(0.98 + Math.Sqrt(attributes.SpeedDifficulty) * DiffUtils.Smootherstep(attributes.RhythmFactor, 1, 0.25), 0.35);
 
             double accuracyValue = accuracy_pp_multiplier *
-                                   DiffUtils.Pow(DiffUtils.Erf(10.0 / totalDeviation.Value), 4) *
+                                   DiffUtils.Pow(DiffUtils.Erf(7.0 / totalDeviation.Value), 4) *
                                    tappingDifficultyFactor;
 
             int amountHitObjectsWithAccuracy = attributes.HitCircleCount;

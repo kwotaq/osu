@@ -152,7 +152,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         public double CalculateNoRhythmDifficulty()
         {
-            return HarmonicSeries.Aggregate(noRhythmStrains, harmonicScale: harmonic_scale).difficulty;
+            return HarmonicSeries.Aggregate(noRhythmStrains, harmonicScale: 15).difficulty;
         }
     }
 }
