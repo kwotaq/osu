@@ -24,7 +24,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             if (current.BaseObject is Spinner || current.Index <= 1 || osuLastObj.BaseObject is Spinner)
                 return 0;
 
-            const double velocity_change_multiplier = 0.7;
+            const double velocity_change_multiplier = 0.0;
             const double acute_angle_multiplier = 1.35;
             const double rhythm_change_bonus_cap = 0.15;
 

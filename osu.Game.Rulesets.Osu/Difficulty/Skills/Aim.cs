@@ -33,7 +33,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         protected override double TimeThresholdMinutes => 1000;
 
         private double skillMultiplierSnap => 338.0;
-        private double skillMultiplierAgility => 11.0;
+        private double skillMultiplierAgility => 175.0 * 1_000_000;
         private double skillMultiplierFlow => 1290;
         private double skillMultiplierTotal => 0.92;
         private double meanExponent => 1.2;
