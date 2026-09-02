@@ -30,12 +30,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private double currentStrain;
 
-        protected override double TimeThresholdMinutes => 1000;
+        protected override double TimeThresholdMinutes => 100;
 
-        private double skillMultiplierSnap => 600.0;
-        private double skillMultiplierAgility => 960.0 * 1_000_000;
-        private double skillMultiplierFlow => 1500;
-        private double skillMultiplierTotal => 0.9;
+        private double skillMultiplierSnap => 680.0;
+        private double skillMultiplierAgility => 920.0 * 1_000_000;
+        private double skillMultiplierFlow => 1600;
+        private double skillMultiplierTotal => 0.65;
         private double meanExponent => 1.2;
 
         private readonly List<double> sliderStrains = new List<double>();
@@ -51,12 +51,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             const double limit_of_proportion = 0.9;
             // how quickly does the player lose the ability to aim normally at the limit of proportion
             // increasing this has a similar effect as increasing the limit of proportion, but it changes how significant the effect is across maps
-            const double breakdown_rate = 4;
+            const double breakdown_rate = 3;
             double adjustedDeviation = baseDeviation + Math.Exp(breakdown_rate * (baseDeviation - limit_of_proportion));
 
             const double contamination_rate = 5e-3;
 
-            const double contamination_scale = 3.0;
+            const double contamination_scale = 2.2;
 
             double cleanProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * adjustedDeviation));
             double contaminatedProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * contamination_scale * adjustedDeviation));
