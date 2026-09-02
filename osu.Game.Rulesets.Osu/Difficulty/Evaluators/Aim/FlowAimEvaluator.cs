@@ -24,7 +24,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             if (current.BaseObject is Spinner || current.Index <= 1 || osuLastObj.BaseObject is Spinner)
                 return 0;
 
-            const double velocity_change_multiplier = 0.5;
+            const double velocity_change_multiplier = 0.7;
             const double acute_angle_multiplier = 1.35;
             const double rhythm_change_bonus_cap = 0.15;
 
@@ -51,9 +51,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             // We use reduced CS bonus here because the bonus was made for an evaluator with a different d/t scaling
             flowDifficulty *= Math.Sqrt(osuCurrObj.SmallCircleBonus);
 
-            // Rhythm changes are harder to flow
-            flowDifficulty *= 1 + Math.Min(rhythm_change_bonus_cap,
-                DiffUtils.Pow((Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) - Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime)) / 50, 4));
+            // // Rhythm changes are harder to flow
+            // flowDifficulty *= 1 + Math.Min(rhythm_change_bonus_cap,
+            //     DiffUtils.Pow((Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) - Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime)) / 50, 4));
 
             if (osuCurrObj.Angle != null && osuLastObj.Angle != null)
             {
