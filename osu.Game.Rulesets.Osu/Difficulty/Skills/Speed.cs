@@ -21,6 +21,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
     public class Speed : Skill
     {
         private readonly List<double> sliderStrains = new List<double>();
+        private readonly List<double> noRhythmStrains = new List<double>();
 
         private double currentBurstStrain;
         private double currentStreamStrain;
@@ -76,6 +77,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             if (current.BaseObject is Slider)
                 sliderStrains.Add(totalValue);
+
+            noRhythmStrains.Add(DiffUtils.Norm(mean_exponent,
+                currentBurstStrain,
+                currentStreamStrain,
+                currentStaminaStrain) * total_multiplier);
 
             return totalValue;
         }
@@ -142,6 +148,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             // Use a weighted sum of all notes. Constants are arbitrary and give nice values
             return sliderStrains.Sum(s => DiffUtils.Logistic(s / consistentTopObject, 0.88, 10, 1.1));
+        }
+
+        public double CalculateNoRhythmDifficulty()
+        {
+            return HarmonicSeries.Aggregate(noRhythmStrains, harmonicScale: harmonic_scale).difficulty;
         }
     }
 }

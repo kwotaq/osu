@@ -59,6 +59,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         [JsonProperty("slider_factor")]
         public double SliderFactor { get; set; }
 
+        [JsonProperty("rhythm_factor")]
+        public double RhythmFactor { get; set; }
+
         /// <summary>
         /// Describes how much of the highest aim difficulties are hitcircles or sliders
         /// A value closer to 0.0 indicates most of the highest aim difficulties are hitcircles

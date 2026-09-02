@@ -58,6 +58,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         private double approachRate;
         private double drainRate;
 
+        private double? totalDeviation;
         private double? speedDeviation;
 
         private double aimEstimatedSliderBreaks;
@@ -150,6 +151,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 effectiveMissCount = Math.Min(effectiveMissCount + countOk * okMultiplier + countMeh * mehMultiplier, totalHits);
             }
 
+            totalDeviation = calculateTotalDeviation(osuAttributes);
             speedDeviation = calculateSpeedDeviation(osuAttributes);
 
             double aimValue = computeAimValue(score, osuAttributes);
@@ -175,6 +177,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 AimEstimatedSliderBreaks = aimEstimatedSliderBreaks,
                 SpeedEstimatedSliderBreaks = speedEstimatedSliderBreaks,
                 SpeedDeviation = speedDeviation,
+                TotalDeviation = totalDeviation,
                 Total = totalValue
             };
         }
@@ -279,32 +282,30 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
         private double computeAccuracyValue(ScoreInfo score, OsuDifficultyAttributes attributes)
         {
-            if (score.Mods.Any(h => h is OsuModRelax))
+            if (score.Mods.Any(h => h is OsuModRelax) || totalDeviation == null)
                 return 0.0;
 
-            // This percentage only considers HitCircles of any value - in this part of the calculation we focus on hitting the timing hit window.
-            double betterAccuracyPercentage;
+            const double accuracy_pp_multiplier = 230.0;
+
+            // Due to the nature of the rhythm difficulty (it's almost never zero) we want to use rhythm factor non-linearly.
+            double tappingDifficultyFactor = DiffUtils.Pow(0.98 + Math.Sqrt(attributes.SpeedDifficulty) * DiffUtils.Smootherstep(attributes.RhythmFactor, 1, 0.25), 0.35);
+
+            double accuracyValue = accuracy_pp_multiplier *
+                                   DiffUtils.Pow(DiffUtils.Erf(10.0 / totalDeviation.Value), 4) *
+                                   tappingDifficultyFactor;
+
             int amountHitObjectsWithAccuracy = attributes.HitCircleCount;
             if (!usingClassicSliderAccuracy || usingScoreV2)
                 amountHitObjectsWithAccuracy += attributes.SliderCount;
 
-            if (amountHitObjectsWithAccuracy > 0)
-                betterAccuracyPercentage = ((countGreat - Math.Max(totalHits - amountHitObjectsWithAccuracy, 0)) * 6 + countOk * 2 + countMeh) / (double)(amountHitObjectsWithAccuracy * 6);
-            else
-                betterAccuracyPercentage = 0;
-
-            // It is possible to reach a negative accuracy with this formula. Cap it at zero - zero points.
-            if (betterAccuracyPercentage < 0)
-                betterAccuracyPercentage = 0;
-
-            // Lots of arbitrary values from testing.
-            // Considering to use derivation from perfect accuracy in a probabilistic manner - assume normal distribution.
-            double accuracyValue = DiffUtils.Pow(1.52163, overallDifficulty) * DiffUtils.Pow(betterAccuracyPercentage, 24) * 1.5;
-
             // Bonus for many hitcircles - it's harder to keep good accuracy up for longer.
             accuracyValue *= amountHitObjectsWithAccuracy < 1000
-                ? DiffUtils.Pow(amountHitObjectsWithAccuracy / 1000.0, 0.3)
-                : DiffUtils.Pow(amountHitObjectsWithAccuracy / 1000.0, 0.1);
+                ? Math.Pow(amountHitObjectsWithAccuracy / 1000.0, 0.25)
+                : Math.Pow(amountHitObjectsWithAccuracy / 1000.0, 0.1);
+
+            // Deviation represents only the tapping variance on objects that were actually tapped, but we want misses to have an effect on accuracy pp as well.
+            if (effectiveMissCount > 0)
+                accuracyValue *= 0.98 * DiffUtils.Pow(1 - effectiveMissCount / totalHits, 15);
 
             // Increasing the accuracy value by object count for Blinds isn't ideal, so the minimum buff is given.
             if (score.Mods.Any(m => m is OsuModBlinds))
@@ -438,6 +439,50 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double relevantCountGreat = Math.Max(0, speedNoteCount - relevantCountMiss - relevantCountMeh - relevantCountOk);
 
             return calculateDeviation(relevantCountGreat, relevantCountOk, relevantCountMeh);
+        }
+
+        /// <summary>
+        /// Estimates the player's total tapping deviation.
+        /// </summary>
+        private double? calculateTotalDeviation(OsuDifficultyAttributes attributes)
+        {
+            if (totalSuccessfulHits == 0)
+                return null;
+
+            if (!usingClassicSliderAccuracy)
+                return calculateDeviation(countGreat, countOk, countMeh);
+
+            int circleCount = attributes.HitCircleCount;
+            int missCountCircles = Math.Min(countMiss, circleCount);
+            int mehCountCircles = Math.Min(countMeh, circleCount - missCountCircles);
+            int okCountCircles = Math.Min(countOk, circleCount - missCountCircles - mehCountCircles);
+            int greatCountCircles = Math.Max(0, circleCount - missCountCircles - mehCountCircles - okCountCircles);
+
+            // Assume 100s, 50s, and misses happen on circles. If there are less non-300s on circles than 300s,
+            // compute the deviation on circles.
+            if (greatCountCircles > 0)
+            {
+                return calculateDeviation(greatCountCircles, okCountCircles, mehCountCircles);
+            }
+
+            // If there are more non-300s than there are circles, compute the deviation on sliders instead.
+            // Here, all that matters is whether or not the slider was missed, since it is impossible
+            // to get a 100 or 50 on a slider by mis-tapping it.
+            int sliderCount = attributes.SliderCount;
+            int missCountSliders = Math.Min(sliderCount, countMiss - missCountCircles);
+            int greatCountSliders = sliderCount - missCountSliders;
+
+            // We only get here if nothing was hit. In this case, there is no estimate for deviation.
+            // Note that this is never negative, so checking if this is only equal to 0 makes sense.
+            if (greatCountSliders == 0)
+            {
+                return null;
+            }
+
+            double greatProbabilitySlider = greatCountSliders / (sliderCount + 1.0);
+            double deviationOnSliders = mehHitWindow / (DiffUtils.SQRT2 * DiffUtils.ErfInv(greatProbabilitySlider));
+
+            return deviationOnSliders;
         }
 
         /// <summary>

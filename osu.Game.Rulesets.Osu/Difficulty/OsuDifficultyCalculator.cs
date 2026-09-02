@@ -42,6 +42,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double aimDifficultyValue = aim.DifficultyValue();
             double aimNoSlidersDifficultyValue = aimWithoutSliders.DifficultyValue();
             double speedDifficultyValue = speed.DifficultyValue();
+            double speedNoRhythmDifficultyValue = speed.CalculateNoRhythmDifficulty();
             double readingDifficultyValue = reading.DifficultyValue();
 
             double[] aimMissPenaltyCoefficients = aim.GetMissPenaltyCoefficients();
@@ -68,13 +69,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
             double aimRating = calculateAimDifficultyRating(aimDifficultyValue);
             double aimNoSlidersRating = calculateAimDifficultyRating(aimNoSlidersDifficultyValue);
-
-            double sliderFactor = aimDifficultyValue > 0
-                ? aimNoSlidersRating / aimRating
-                : 1;
-
             double speedRating = calculateDifficultyRating(speedDifficultyValue);
+            double speedNoRhythmRating = calculateDifficultyRating(speedNoRhythmDifficultyValue);
             double readingRating = calculateDifficultyRating(readingDifficultyValue);
+
+            double sliderFactor = aimDifficultyValue > 0 ? aimNoSlidersRating / aimRating : 1;
+            double rhythmFactor = speedDifficultyValue > 0 ? speedNoRhythmRating / speedRating : 1;
 
             double flashlightRating = 0.0;
 
@@ -111,6 +111,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 AimMissPenaltyCoefficientA = aimMissPenaltyCoefficients.ElementAtOrDefault(0),
                 AimMissPenaltyCoefficientB = aimMissPenaltyCoefficients.ElementAtOrDefault(1),
                 AimMissPenaltyCoefficientC = aimMissPenaltyCoefficients.ElementAtOrDefault(2),
+                RhythmFactor = rhythmFactor,
                 SpeedDifficultStrainCount = speedDifficultStrainCount,
                 ReadingDifficultNoteCount = readingDifficultNoteCount,
                 AimTopWeightedSliderFactor = aimTopWeightedSliderFactor,
