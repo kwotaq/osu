@@ -32,10 +32,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         protected override double TimeThresholdMinutes => 1000;
 
-        private double skillMultiplierSnap => 338.0;
-        private double skillMultiplierAgility => 175.0 * 1_000_000;
-        private double skillMultiplierFlow => 1290;
-        private double skillMultiplierTotal => 0.92;
+        private double skillMultiplierSnap => 600.0;
+        private double skillMultiplierAgility => 960.0 * 1_000_000;
+        private double skillMultiplierFlow => 1500;
+        private double skillMultiplierTotal => 0.9;
         private double meanExponent => 1.2;
 
         private readonly List<double> sliderStrains = new List<double>();
@@ -56,7 +56,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             const double contamination_rate = 5e-3;
 
-            const double contamination_scale = 3.45;
+            const double contamination_scale = 3.0;
 
             double cleanProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * adjustedDeviation));
             double contaminatedProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * contamination_scale * adjustedDeviation));
