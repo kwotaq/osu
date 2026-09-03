@@ -71,7 +71,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 flowDifficulty += currVelocity *
                                   Math.Min(AngleUtils.CalculateAcuteness(osuCurrObj.Angle.Value), AngleUtils.CalculateAcuteness(osuNextObj.Angle.Value)) *
                                   calculateOverlapWeight(osuNextObj, osuCurrObj, osuLastObj) *
-                                  acute_angle_multiplier;
+                                  0.9;
             }
 
             if (Math.Max(prevVelocity, currVelocity) != 0)
