@@ -24,7 +24,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
                 return 0;
 
             const double min_speed_bonus = 200; // 200 BPM 1/4th
-            const double speed_balancing_factor = 36;
+            const double speed_balancing_factor = 38;
 
             var osuCurrObj = (OsuDifficultyHitObject)current;
 
