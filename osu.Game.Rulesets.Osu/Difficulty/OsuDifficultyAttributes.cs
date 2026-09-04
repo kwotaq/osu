@@ -59,6 +59,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         [JsonProperty("slider_factor")]
         public double SliderFactor { get; set; }
 
+        [JsonProperty("rhythm_factor")]
+        public double RhythmFactor { get; set; }
+
         /// <summary>
         /// Describes how much of <see cref="AimDifficultStrainCount"/> is contributed to by hitcircles or sliders
         /// A value closer to 0.0 indicates most of <see cref="AimDifficultStrainCount"/> is contributed by hitcircles
