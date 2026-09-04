@@ -7,6 +7,7 @@ using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Osu.Objects;
+using osuTK;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 {
@@ -25,23 +26,22 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             double velocity = Math.Max(1, currObj.JumpDistance / currObj.AdjustedDeltaTime); // Only allow velocity to buff
 
-            double currentVisibleObjectDensity = retrieveCurrentVisibleObjectDensity(currObj);
+            double currentVisibleObjectDensity = retrieveCurrentVisibleObjectDensity(currObj, hidden, out var objects);
             double pastObjectDifficultyInfluence = getPastObjectDifficultyInfluence(currObj);
 
             double constantAngleNerfFactor = getConstantAngleNerfFactor(currObj);
 
-            double noteDensityDifficulty = calculateDensityDifficulty(nextObj, velocity, constantAngleNerfFactor, pastObjectDifficultyInfluence, currentVisibleObjectDensity);
+            double noteDensityDifficulty = calculateDensityDifficulty(nextObj, velocity, constantAngleNerfFactor, pastObjectDifficultyInfluence, currentVisibleObjectDensity, objects, currObj);
+            noteDensityDifficulty *= highBpmBonus(currObj.AdjustedDeltaTime);
 
             double hiddenDifficulty = hidden
                 ? calculateHiddenDifficulty(currObj, pastObjectDifficultyInfluence, currentVisibleObjectDensity, velocity, constantAngleNerfFactor)
                 : 0;
+            hiddenDifficulty *= highBpmBonus(currObj.AdjustedDeltaTime);
 
-            double preemptDifficulty = calculatePreemptDifficulty(velocity, constantAngleNerfFactor, currObj.Preempt);
+            double preemptDifficulty = calculatePreemptDifficulty(currObj, constantAngleNerfFactor, currObj.Preempt);
 
             double readingDifficulty = DiffUtils.Norm(1.5, preemptDifficulty, hiddenDifficulty, noteDensityDifficulty);
-
-            // Having less time to process information is harder
-            readingDifficulty *= highBpmBonus(currObj.AdjustedDeltaTime);
 
             return readingDifficulty;
         }
@@ -56,13 +56,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         /// /// </list>
         /// </summary>
         private static double calculateDensityDifficulty(OsuDifficultyHitObject? nextObj, double velocity, double constantAngleNerfFactor,
-                                                         double pastObjectDifficultyInfluence, double currentVisibleObjectDensity)
+                                                         double pastObjectDifficultyInfluence, double currentVisibleObjectDensity, List<OsuDifficultyHitObject> visibleObjects, OsuDifficultyHitObject currentObject)
         {
-            const double density_multiplier = 2.4;
+            const double density_multiplier = 1.85;
             const double density_difficulty_base = 2.5;
+            const double intersections_multiplier = 17.0;
 
             // Consider future densities too because it can make the path the cursor takes less clear
             double futureObjectDifficultyInfluence = Math.Sqrt(currentVisibleObjectDensity);
+
+            double intersectionsDifficulty = calculatePathIntersections(visibleObjects, currentObject, nextObj) * intersections_multiplier * constantAngleNerfFactor;
 
             if (nextObj != null)
             {
@@ -79,7 +82,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             // Apply a soft cap to general density reading to account for partial memorization
             noteDensityDifficulty = DiffUtils.Pow(noteDensityDifficulty, 0.45) * density_multiplier;
 
-            return noteDensityDifficulty;
+            return noteDensityDifficulty + intersectionsDifficulty;
         }
 
         /// <summary>
@@ -90,18 +93,32 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         /// <item><description>how many milliseconds elapse between the approach circle appearing and touching the inner circle</description></item>
         /// </list>
         /// </summary>
-        private static double calculatePreemptDifficulty(double velocity, double constantAngleNerfFactor, double preempt)
+        private static double calculatePreemptDifficulty(OsuDifficultyHitObject currObj, double constantAngleNerfFactor, double preempt)
         {
-            const double preempt_balancing_factor = 140000;
+            const double preempt_multiplier = 230;
             const double preempt_starting_point = 500; // AR 9.66 in milliseconds
 
             // Arbitrary curve for the base value preempt difficulty should have as approach rate increases.
             // https://www.desmos.com/calculator/c175335a71
-            double preemptDifficulty = DiffUtils.Pow((preempt_starting_point - preempt + Math.Abs(preempt - preempt_starting_point)) / 2, 2.5) / preempt_balancing_factor;
+            double preemptDifficulty = DiffUtils.Pow((preempt_starting_point - preempt + Math.Abs(preempt - preempt_starting_point)) / 2 / 1000, 2.5) * preempt_multiplier;
 
-            preemptDifficulty *= constantAngleNerfFactor * velocity;
+            // Base difficulty for reading high AR, starting from raw preempt difficulty
+            double baseDifficulty = preemptDifficulty;
 
-            return preemptDifficulty;
+            // Velocity bonus, as harder patterns are harder to read
+            double velocityFactor = (currObj.JumpDistance / currObj.AdjustedDeltaTime) * highBpmBonus(currObj.AdjustedDeltaTime);
+
+            // Safeguard against easy maps with extremely high AR
+            double reduceBaseline = velocityFactor * 10;
+            double delta = baseDifficulty - reduceBaseline;
+
+            // Scale logarithmically past the baseline
+            baseDifficulty = reduceBaseline + (delta > 0 ? Math.Log(delta + 1) : delta);
+
+            // Apply multipliers to base difficulty and velocity factor
+            double difficulty = 30 * baseDifficulty + 0.5 * velocityFactor * preemptDifficulty;
+
+            return difficulty * constantAngleNerfFactor;
         }
 
         /// <summary>
@@ -179,9 +196,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         }
 
         // Returns the density of objects visible at the point in time the current object needs to be clicked capped by the reading window.
-        private static double retrieveCurrentVisibleObjectDensity(OsuDifficultyHitObject current)
+        private static double retrieveCurrentVisibleObjectDensity(OsuDifficultyHitObject current, bool hidden, out List<OsuDifficultyHitObject> objects)
         {
             double visibleObjectCount = 0;
+            objects = new List<OsuDifficultyHitObject>();
 
             OsuDifficultyHitObject? hitObject = (OsuDifficultyHitObject)current.Next(0);
 
@@ -194,7 +212,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 double timeBetweenCurrAndLoopObj = hitObject.StartTime - current.StartTime;
                 double timeNerfFactor = getTimeNerfFactor(timeBetweenCurrAndLoopObj);
 
-                visibleObjectCount += hitObject.OpacityAt(current.BaseObject.StartTime, false) * timeNerfFactor;
+                double visibility = hitObject.OpacityAt(current.BaseObject.StartTime, false) * timeNerfFactor;
+                visibleObjectCount += visibility;
+
+                double visibilityWithHidden = hitObject.OpacityAt(current.BaseObject.StartTime, hidden);
+                if (visibilityWithHidden > 0.0) // 0.0 maybe?
+                    objects.Add(hitObject);
 
                 hitObject = (OsuDifficultyHitObject?)hitObject.Next(0);
             }
@@ -271,5 +294,87 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         }
 
         private static double highBpmBonus(double ms) => 1 / (1 - DiffUtils.Pow(0.8, ms / 1000));
+
+        private static double calculatePathIntersections(List<OsuDifficultyHitObject> visibleObjects, OsuDifficultyHitObject currentObject, OsuDifficultyHitObject? nextObject)
+        {
+            if (nextObject == null)
+                return 0;
+
+            if (visibleObjects.Count == 0)
+                return 0;
+
+            double intersections = 0.0;
+
+            var currBase = (OsuHitObject)currentObject.BaseObject;
+            var nextBase = (OsuHitObject)nextObject.BaseObject;
+
+            float scalingFactor = OsuDifficultyHitObject.NORMALISED_RADIUS / (float)currBase.Radius;
+
+            var currentPosition = currBase.StackedPosition;
+            var nextPosition = nextBase.StackedPosition;
+
+            var nextVector = currentPosition - nextPosition;
+            float movementDistance = (nextPosition - currentPosition).Length * scalingFactor;
+
+            // calculate amount of circles intersecting the movement excluding current and next circles
+            foreach (OsuDifficultyHitObject visibleObject in visibleObjects)
+            {
+                var visibleObjectPosition = ((OsuHitObject)visibleObject.BaseObject).StackedPosition;
+                var visibleToCurrentVector = currentPosition - visibleObjectPosition;
+                float visibleToNextDistance = (nextPosition - visibleObjectPosition).Length * scalingFactor;
+
+                // scale the bonus by distance of movement and distance between intersected object and movement end object
+                double intersectionBonus = checkMovementIntersect(nextVector, OsuDifficultyHitObject.NORMALISED_RADIUS, visibleToCurrentVector) *
+                                           DiffUtils.Smootherstep(movementDistance, 0, distance_influence_threshold) *
+                                           DiffUtils.Smootherstep(visibleToNextDistance, 0, distance_influence_threshold);
+
+                // this is temp until sliders get proper reading impl
+                if (visibleObject.BaseObject is Slider)
+                    intersectionBonus *= 1.5;
+
+                // TODO: approach circle intersections
+
+                intersections += intersectionBonus;
+            }
+
+            return intersections; // / visibleObjects.Count;
+        }
+
+        private static double checkMovementIntersect(Vector2 direction, double radius, Vector2 endPoint)
+        {
+            double a = Vector2.Dot(direction, direction);
+            double b = 2 * Vector2.Dot(endPoint, direction);
+            double c = Vector2.Dot(endPoint, endPoint) - radius * radius;
+
+            double discriminant = b * b - 4 * a * c;
+
+            if (discriminant < 0)
+            {
+                // no intersection
+                return 0.0;
+            }
+
+            discriminant = Math.Sqrt(discriminant);
+
+            double t1 = (-b - discriminant) / (2 * a);
+            double t2 = (-b + discriminant) / (2 * a);
+
+            if (t1 >= 0 && t1 <= 1)
+            {
+                // t1 is the intersection, and it's closer than t2
+                return t1;
+            }
+
+            // here t1 didn't intersect so we are either started
+            // inside the sphere or completely past it
+            if (t2 >= 0 && t2 <= 1)
+            {
+                return t2 / 2.0;
+            }
+
+            return 0.0;
+        }
+
+        private static double l2Norm(Vector2 vector) => Math.Sqrt(DiffUtils.Pow(vector.X, 2) + DiffUtils.Pow(vector.Y, 2));
     }
 }

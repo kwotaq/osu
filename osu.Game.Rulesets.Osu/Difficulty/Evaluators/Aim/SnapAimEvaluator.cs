@@ -60,7 +60,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj,
                                                       double currDistance, double prevDistance, bool withSliderTravelDistance)
         {
-            const double wide_angle_multiplier = 8.0;
+            const double wide_angle_multiplier = 0.8;
 
             if (osuCurrObj.Angle == null || osuLastObj.Angle == null)
                 return 0;
@@ -68,7 +68,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             double wideAngleBonus = AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
 
             // Rescaling velocity for the wide angle bonus
-            const double wide_angle_time_scale = 1.45;
+            const double wide_angle_time_scale = 1.0;
 
             double currRescaledVelocity = currDistance / DiffUtils.Pow(osuCurrObj.AdjustedDeltaTime, wide_angle_time_scale);
             double prevRescaledVelocity = prevDistance / DiffUtils.Pow(osuLastObj.AdjustedDeltaTime, wide_angle_time_scale);
@@ -104,7 +104,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         private static double calculateVelocityChangeBonus(bool withSliderTravelDistance, double prevVelocity, double currVelocity,
                                                            double currDistance, OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj)
         {
-            const double velocity_change_multiplier = 0.5;
+            const double velocity_change_multiplier = 0.4;
 
             if (Math.Max(prevVelocity, currVelocity) == 0)
                 return 0;
