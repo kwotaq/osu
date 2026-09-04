@@ -95,12 +95,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         /// </summary>
         private static double calculatePreemptDifficulty(OsuDifficultyHitObject currObj, double constantAngleNerfFactor, double preempt)
         {
-            const double preempt_multiplier = 230;
-            const double preempt_starting_point = 500; // AR 9.66 in milliseconds
+            const double preempt_multiplier = 60;
+            const double preempt_starting_point = 540; // AR 9.66 in milliseconds
 
             // Arbitrary curve for the base value preempt difficulty should have as approach rate increases.
             // https://www.desmos.com/calculator/c175335a71
-            double preemptDifficulty = DiffUtils.Pow((preempt_starting_point - preempt + Math.Abs(preempt - preempt_starting_point)) / 2 / 1000, 2.5) * preempt_multiplier;
+            double preemptDifficulty = DiffUtils.Pow((preempt_starting_point - preempt + Math.Abs(preempt - preempt_starting_point)) / 2 / 1000, 2.0) * preempt_multiplier;
 
             // Base difficulty for reading high AR, starting from raw preempt difficulty
             double baseDifficulty = preemptDifficulty;
