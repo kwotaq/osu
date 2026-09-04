@@ -21,8 +21,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 {
     public class OsuPerformanceCalculator : PerformanceCalculator
     {
-        public const double PERFORMANCE_BASE_MULTIPLIER = 1.3; // This is being adjusted to keep the final pp value scaled around what it used to be when changing things.
-        public const double PERFORMANCE_NORM_EXPONENT = 1.3;
+        public const double PERFORMANCE_BASE_MULTIPLIER = 1.12; // This is being adjusted to keep the final pp value scaled around what it used to be when changing things.
+        public const double PERFORMANCE_NORM_EXPONENT = 1.1;
 
         private bool usingClassicSliderAccuracy;
         private bool usingScoreV2;
@@ -289,7 +289,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double tappingDifficultyFactor = DiffUtils.Pow(0.98 + Math.Sqrt(attributes.SpeedDifficulty) * DiffUtils.Smootherstep(attributes.RhythmFactor, 1, 0.25), 0.35);
 
             double accuracyValue = accuracy_pp_multiplier *
-                                   DiffUtils.Pow(DiffUtils.Erf(10.0 / totalDeviation.Value), 4) *
+                                   DiffUtils.Pow(DiffUtils.Erf(6.0 / totalDeviation.Value), 4) *
                                    tappingDifficultyFactor;
 
             int amountHitObjectsWithAccuracy = attributes.HitCircleCount;

@@ -29,7 +29,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         }
 
         private double currentStrain;
-        protected override double TimeThresholdMinutes => 100;
+        protected override double TimeThresholdMinutes => 50;
 
         private readonly List<double> sliderStrains = new List<double>();
 
@@ -41,10 +41,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double baseDeviation = difficulty / skill;
             // at what point does the player lose the ability to aim normally
             // increasing this will like high misscount scores more than ringtone maps, and vice versa
-            const double limit_of_proportion = 0.9;
+            const double limit_of_proportion = 1.2;
             // how quickly does the player lose the ability to aim normally at the limit of proportion
             // increasing this has a similar effect as increasing the limit of proportion, but it changes how significant the effect is across maps
-            const double breakdown_rate = 4;
+            const double breakdown_rate = 5;
             double adjustedDeviation = baseDeviation + Math.Exp(breakdown_rate * (baseDeviation - limit_of_proportion));
 
             const double contamination_rate = 5e-3;
@@ -74,8 +74,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private double calculateAdjustedDifficulty(DifficultyHitObject current)
         {
-            const double skill_multiplier_snap = 70.9;
-            const double skill_multiplier_agility = 175.0 * 1_000_000;
+            const double skill_multiplier_snap = 110;
+            const double skill_multiplier_agility = 165.0 * 1_000_000;
             const double skill_multiplier_flow = 242.0;
 
             double snapDifficulty = SnapAimEvaluator.EvaluateDifficultyOf(current, IncludeSliders) * skill_multiplier_snap;
@@ -97,7 +97,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private double calculateTotalValue(double snapDifficulty, double agilityDifficulty, double flowDifficulty)
         {
-            const double skill_multiplier_total = 3.9;
+            const double skill_multiplier_total = 5.5;
             const double combined_snap_norm_exponent = 1.2;
 
             // We compare flow to combined snap and agility because snap by itself doesn't have enough difficulty to be above flow on streams
