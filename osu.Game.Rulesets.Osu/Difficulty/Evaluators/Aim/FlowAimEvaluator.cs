@@ -25,7 +25,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 return 0;
 
             const double velocity_change_multiplier = 0.0;
-            const double acute_angle_multiplier = 0.5;
+            const double acute_angle_multiplier = 0.9;
             const double rhythm_change_bonus_cap = 0.15;
 
             var osuNextObj = (OsuDifficultyHitObject?)current.Next(0);

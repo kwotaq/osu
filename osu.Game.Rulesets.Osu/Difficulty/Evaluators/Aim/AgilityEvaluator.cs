@@ -31,7 +31,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 numerator += 0.5 * (1 - Math.Min(AngleUtils.CalculateAcuteness(osuCurrObj.Angle.Value), DiffUtils.Pow(AngleUtils.CalculateAcuteness(osuPrevObj.Angle.Value), 3)));
             }
 
-            double agilityDifficulty = numerator / DiffUtils.Pow(osuCurrObj.AdjustedDeltaTime, 3);
+            double agilityDifficulty = numerator / DiffUtils.Pow(osuCurrObj.AdjustedDeltaTime, 4);
 
             agilityDifficulty *= DiffUtils.Pow(osuCurrObj.SmallCircleBonus, 1.5);
 
