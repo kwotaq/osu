@@ -29,29 +29,53 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             IncludeSliders = includeSliders;
         }
 
-        private double currentStrain;
+        private static double currentStrainLong;
+        private static double currentStrainMedium;
+        private static double currentStrainShort;
 
         private readonly List<double> sliderStrains = new List<double>();
 
-        private double strainDecay(double ms) => DiffUtils.Pow(0.2, ms / 1000);
+        private double strainDecayLong(double ms) => DiffUtils.Pow(0.3, ms / 1000);
+
+        private double strainDecayMedium(double ms) => DiffUtils.Pow(0.15, ms / 1000);
+        private double strainDecayShort(double ms) => DiffUtils.Pow(0.05, DiffUtils.Pow(ms / 1000, 1.6));
 
         protected override double CalculateInitialStrain(double time, DifficultyHitObject current) =>
-            currentStrain * strainDecay(time - current.Previous(0).StartTime);
+            currentStrainLong * strainDecayLong(time - current.Previous(0).StartTime);
 
         protected override double StrainValueAt(DifficultyHitObject current)
         {
             if (Mods.Any(m => m is OsuModAutopilot))
                 return 0;
 
-            double decay = strainDecay(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
+            const double total_multiplier = 0.6;
+            const double long_multiplier = 1.06;
+            const double medium_multiplier = 0.4;
+            const double short_multiplier = 0.53;
+            const double mean_exponent = 1.25;
 
-            currentStrain *= decay;
-            currentStrain += calculateAdjustedDifficulty(current) * (1 - decay);
+            double decayLong = strainDecayLong(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
+            double decayMedium = strainDecayMedium(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
+            double decayShort = strainDecayShort(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
+
+            currentStrainLong *= decayLong;
+            currentStrainLong += calculateAdjustedDifficulty(current) * (1 - decayLong) * long_multiplier;
+
+            currentStrainMedium *= decayMedium;
+            currentStrainMedium += calculateAdjustedDifficulty(current) * (1 - decayMedium) * medium_multiplier;
+
+            currentStrainShort *= decayShort;
+            currentStrainShort += calculateAdjustedDifficulty(current) * (1 - decayShort) * short_multiplier;
+
+            double totalValue = DiffUtils.Norm(mean_exponent,
+                currentStrainLong,
+                currentStrainMedium,
+                currentStrainShort) * total_multiplier;
 
             if (current.BaseObject is Slider)
-                sliderStrains.Add(currentStrain);
+                sliderStrains.Add(totalValue);
 
-            return currentStrain;
+            return totalValue;
         }
 
         private double calculateAdjustedDifficulty(DifficultyHitObject current)
