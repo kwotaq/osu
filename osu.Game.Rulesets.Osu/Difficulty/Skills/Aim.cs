@@ -28,10 +28,15 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             IncludeSliders = includeSliders;
         }
 
-        private double currentStrain;
+        private static double currentStrainLong;
+        private static double currentStrainShort;
         protected override double TimeThresholdMinutes => 50;
 
         private readonly List<double> sliderStrains = new List<double>();
+
+        private double strainDecayLong(double ms) => DiffUtils.Pow(0.5, ms / 1000);
+
+        private double strainDecayShort(double ms) => DiffUtils.Pow(0.01, DiffUtils.Pow(ms / 1000, 1.6));
 
         protected override double HitProbability(double skill, double difficulty)
         {
@@ -49,7 +54,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             const double contamination_rate = 5e-3;
 
-            const double contamination_scale = 2.3;
+            const double contamination_scale = 2.5;
 
             double cleanProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * adjustedDeviation));
             double contaminatedProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * contamination_scale * adjustedDeviation));
@@ -57,29 +62,39 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return (1 - contamination_rate) * cleanProbability + contamination_rate * contaminatedProbability;
         }
 
-        private double strainDecay(double ms) => Math.Pow(0.15, ms / 1000);
-
         protected override double StrainValueAt(DifficultyHitObject current)
         {
             if (Mods.Any(m => m is OsuModAutopilot))
                 return 0;
 
-            double decay = strainDecay(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
+            const double long_multiplier = 0.79;
+            const double short_multiplier = 0.5;
+            const double mean_exponent = 1.4;
 
-            currentStrain *= decay;
-            currentStrain += calculateAdjustedDifficulty(current) * (1 - decay);
+            double decayLong = strainDecayLong(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
+            double decayShort = strainDecayShort(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
+
+            currentStrainLong *= decayLong;
+            currentStrainLong += calculateAdjustedDifficulty(current) * (1 - decayLong) * long_multiplier;
+
+            currentStrainShort *= decayShort;
+            currentStrainShort += calculateAdjustedDifficulty(current) * (1 - decayShort) * short_multiplier;
+
+            double totalValue = DiffUtils.Norm(mean_exponent,
+                currentStrainLong,
+                currentStrainShort);
 
             if (current.BaseObject is Slider)
-                sliderStrains.Add(currentStrain);
+                sliderStrains.Add(totalValue);
 
-            return currentStrain;
+            return totalValue;
         }
 
         private double calculateAdjustedDifficulty(DifficultyHitObject current)
         {
-            const double skill_multiplier_snap = 92.0;
-            const double skill_multiplier_agility = 2.8;
-            const double skill_multiplier_flow = 260.0;
+            const double skill_multiplier_snap = 72;
+            const double skill_multiplier_agility = 2.5;
+            const double skill_multiplier_flow = 235.0;
 
             double snapDifficulty = SnapAimEvaluator.EvaluateDifficultyOf(current, IncludeSliders) * skill_multiplier_snap;
             double agilityDifficulty = AgilityEvaluator.EvaluateDifficultyOf(current) * skill_multiplier_agility;
@@ -100,7 +115,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private double calculateTotalValue(double snapDifficulty, double agilityDifficulty, double flowDifficulty)
         {
-            const double skill_multiplier_total = 4.9;
+            const double skill_multiplier_total = 4.7;
             const double combined_snap_norm_exponent = 1.2;
 
             // We compare flow to combined snap and agility because snap by itself doesn't have enough difficulty to be above flow on streams
