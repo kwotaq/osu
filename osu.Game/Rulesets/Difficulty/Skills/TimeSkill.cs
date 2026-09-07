@@ -22,7 +22,7 @@ namespace osu.Game.Rulesets.Difficulty.Skills
         // FC time specific constants
         protected virtual double TimeThresholdMinutes => 24;
         private const double max_delta_time = 5000;
-        private const double retry_cooldown_time = 60000;
+        private const double retry_cooldown_time = 00000;
 
         // Bin specific constants
         private const double bin_threshold_note_count = difficulty_bin_count * time_bin_count;

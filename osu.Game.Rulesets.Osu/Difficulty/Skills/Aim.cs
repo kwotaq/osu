@@ -28,36 +28,27 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             IncludeSliders = includeSliders;
         }
 
-        private static double currentStrainLong;
-        private static double currentStrainShort;
+        private double currentStrain;
+
         protected override double TimeThresholdMinutes => 50;
 
         private readonly List<double> sliderStrains = new List<double>();
 
-        private double strainDecayLong(double ms) => DiffUtils.Pow(0.5, ms / 1000);
-
-        private double strainDecayShort(double ms) => DiffUtils.Pow(0.01, DiffUtils.Pow(ms / 1000, 1.6));
+        private double strainDecay(double ms) => DiffUtils.Pow(0.2, ms / 1000);
 
         protected override double HitProbability(double skill, double difficulty)
         {
             if (difficulty <= 0) return 1;
             if (skill <= 0) return 0;
 
-            double baseDeviation = difficulty / skill;
-            // at what point does the player lose the ability to aim normally
-            // increasing this will like high misscount scores more than ringtone maps, and vice versa
-            const double limit_of_proportion = 1.2;
-            // how quickly does the player lose the ability to aim normally at the limit of proportion
-            // increasing this has a similar effect as increasing the limit of proportion, but it changes how significant the effect is across maps
-            const double breakdown_rate = 5;
-            double adjustedDeviation = baseDeviation + Math.Exp(breakdown_rate * (baseDeviation - limit_of_proportion));
+            double baseDeviation = DiffUtils.Pow(difficulty / skill, 1.5);
 
             const double contamination_rate = 5e-3;
 
-            const double contamination_scale = 2.5;
+            const double contamination_scale = 3.5;
 
-            double cleanProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * adjustedDeviation));
-            double contaminatedProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * contamination_scale * adjustedDeviation));
+            double cleanProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * baseDeviation));
+            double contaminatedProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * contamination_scale * baseDeviation));
 
             return (1 - contamination_rate) * cleanProbability + contamination_rate * contaminatedProbability;
         }
@@ -67,34 +58,22 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             if (Mods.Any(m => m is OsuModAutopilot))
                 return 0;
 
-            const double long_multiplier = 0.79;
-            const double short_multiplier = 0.5;
-            const double mean_exponent = 1.4;
+            double decay = strainDecay(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
 
-            double decayLong = strainDecayLong(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
-            double decayShort = strainDecayShort(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
-
-            currentStrainLong *= decayLong;
-            currentStrainLong += calculateAdjustedDifficulty(current) * (1 - decayLong) * long_multiplier;
-
-            currentStrainShort *= decayShort;
-            currentStrainShort += calculateAdjustedDifficulty(current) * (1 - decayShort) * short_multiplier;
-
-            double totalValue = DiffUtils.Norm(mean_exponent,
-                currentStrainLong,
-                currentStrainShort);
+            currentStrain *= decay;
+            currentStrain += calculateAdjustedDifficulty(current) * (1 - decay);
 
             if (current.BaseObject is Slider)
-                sliderStrains.Add(totalValue);
+                sliderStrains.Add(currentStrain);
 
-            return totalValue;
+            return currentStrain;
         }
 
         private double calculateAdjustedDifficulty(DifficultyHitObject current)
         {
-            const double skill_multiplier_snap = 75;
-            const double skill_multiplier_agility = 2.5;
-            const double skill_multiplier_flow = 245.0;
+            const double skill_multiplier_snap = 92;
+            const double skill_multiplier_agility = 2.7;
+            const double skill_multiplier_flow = 247.0;
 
             double snapDifficulty = SnapAimEvaluator.EvaluateDifficultyOf(current, IncludeSliders) * skill_multiplier_snap;
             double agilityDifficulty = AgilityEvaluator.EvaluateDifficultyOf(current) * skill_multiplier_agility;
@@ -115,7 +94,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private double calculateTotalValue(double snapDifficulty, double agilityDifficulty, double flowDifficulty)
         {
-            const double skill_multiplier_total = 4.7;
+            const double skill_multiplier_total = 7.0;
             const double combined_snap_norm_exponent = 1.2;
 
             // We compare flow to combined snap and agility because snap by itself doesn't have enough difficulty to be above flow on streams
