@@ -180,10 +180,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 double loopDifficulty = Math.Max(0, overlapLimit - distanceFromCurrent);
 
                 // circle over slider body
-                loopDifficulty += getBodyOverlapness(currPosition, currSliderPathPositions, loopPosition, overlapLimit, loopDifficulty) * 0.2;
+                loopDifficulty += getBodyOverlapness(currPosition, currSliderPathPositions, loopPosition, overlapLimit) * 0.2;
 
                 // slider body over circle
-                loopDifficulty += getBodyOverlapness(loopPosition, loopSliderPathPositions, currPosition, overlapLimit, loopDifficulty) * 0.15;
+                loopDifficulty += getBodyOverlapness(loopPosition, loopSliderPathPositions, currPosition, overlapLimit) * 0.15;
 
                 // slider body over slider body
                 double bodyDifficulty = 0;
@@ -202,8 +202,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                             overlapToCurrent += Math.Max(0, overlapLimit - bodyDistanceFromCurrent) / loopSliderPathPositions.Count;
                         }
 
-                        bodyDifficulty = Math.Sqrt(Math.Max(loopDifficulty, overlapToCurrent));
+                        bodyDifficulty = Math.Max(bodyDifficulty, overlapToCurrent);
                     }
+
+                    bodyDifficulty = Math.Sqrt(bodyDifficulty);
                 }
 
                 loopDifficulty += bodyDifficulty * 0.7;
@@ -251,7 +253,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             return overlapDifficulty;
         }
 
-        private static double getBodyOverlapness(Vector2 headPosition, List<Vector2> path, Vector2 targetPosition, double overlapLimit, double loopDifficulty)
+        private static double getBodyOverlapness(Vector2 headPosition, List<Vector2> path, Vector2 targetPosition, double overlapLimit)
         {
             double bodyDifficulty = 0;
 
@@ -261,7 +263,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 double bodyDistanceFromCurrent = (targetPosition - bodyPosition).Length;
                 double overlapToCurrent = Math.Max(0, overlapLimit - bodyDistanceFromCurrent);
 
-                bodyDifficulty = Math.Max(loopDifficulty, overlapToCurrent);
+                bodyDifficulty = Math.Max(bodyDifficulty, overlapToCurrent);
 
                 if (bodyDistanceFromCurrent == 0)
                     break;
