@@ -40,13 +40,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             // Penalize angle repetition.
             snapDifficulty *= vectorAngleRepetition(osuCurrObj, osuLastObj);
 
-            double acuteAngleBonus = calculateAcuteAngleBonus(osuCurrObj, osuLastObj, currDistance, currVelocity, prevVelocity);
+            //double acuteAngleBonus = calculateAcuteAngleBonus(osuCurrObj, osuLastObj, currDistance, currVelocity, prevVelocity);
             double wideAngleBonus = calculateWideAngleBonus(osuCurrObj, osuLastObj, currDistance, prevDistance, withSliderTravelDistance);
 
             // Add in acute angle bonus or wide angle bonus, whichever is larger.
-            snapDifficulty += Math.Max(acuteAngleBonus, wideAngleBonus);
+            //snapDifficulty += Math.Max(acuteAngleBonus, wideAngleBonus);
+            snapDifficulty += wideAngleBonus;
 
-            snapDifficulty += calculateWiggleBonus(osuCurrObj, osuLastObj, currVelocity, prevVelocity, currDistance, prevDistance);
+            //snapDifficulty += calculateWiggleBonus(osuCurrObj, osuLastObj, currVelocity, prevVelocity, currDistance, prevDistance);
             snapDifficulty += calculateVelocityChangeBonus(withSliderTravelDistance, prevVelocity, currVelocity, currDistance, osuCurrObj, osuLastObj);
 
             if (osuCurrObj.BaseObject is Slider && withSliderTravelDistance)
@@ -91,7 +92,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj,
                                                       double currDistance, double prevDistance, bool withSliderTravelDistance)
         {
-            const double wide_angle_multiplier = 9.0;
+            const double wide_angle_multiplier = 0.8;
 
             if (osuCurrObj.Angle == null || osuLastObj.Angle == null)
                 return 0;
@@ -102,7 +103,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             wideAngleBonus *= 0.25 + 0.75 * (1 - Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuLastObj.Angle.Value), 3)));
 
             // Rescaling velocity for the wide angle bonus
-            const double wide_angle_time_scale = 1.45;
+            const double wide_angle_time_scale = 1.0;
 
             double currRescaledVelocity = currDistance / DiffUtils.Pow(osuCurrObj.AdjustedDeltaTime, wide_angle_time_scale);
             double prevRescaledVelocity = prevDistance / DiffUtils.Pow(osuLastObj.AdjustedDeltaTime, wide_angle_time_scale);
@@ -148,6 +149,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 // We want to use just the object jump without slider velocity when awarding differences
                 currVelocity = currDistance / osuCurrObj.AdjustedDeltaTime;
             }
+
+            // cap velocity to at least 1 radius distance to only award snap patterns
+            currVelocity = Math.Max(currVelocity, OsuDifficultyHitObject.NORMALISED_RADIUS / osuCurrObj.AdjustedDeltaTime);
+            prevVelocity = Math.Max(prevVelocity, OsuDifficultyHitObject.NORMALISED_RADIUS / osuLastObj.AdjustedDeltaTime);
 
             // Scale with ratio of difference compared to 0.5 * max dist.
             double distRatio = DiffUtils.Smoothstep(Math.Abs(prevVelocity - currVelocity) / Math.Max(prevVelocity, currVelocity), 0, 1);
