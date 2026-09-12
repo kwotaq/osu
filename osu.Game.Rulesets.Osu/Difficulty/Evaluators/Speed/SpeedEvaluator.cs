@@ -37,7 +37,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
         private static double calculateSpeedBonus(OsuDifficultyHitObject osuCurrObj)
         {
             const double min_speed_bonus = 200; // 200 BPM 1/4th
-            const double speed_balancing_factor = 40;
+            const double speed_balancing_factor = 37;
 
             double strainTime = osuCurrObj.AdjustedDeltaTime;
 

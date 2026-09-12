@@ -29,7 +29,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         }
 
         private double currentStrain;
-        protected override double TimeThresholdMinutes => 50;
+        protected override double TimeThresholdMinutes => 24;
 
         private readonly List<double> sliderStrains = new List<double>();
 
@@ -41,7 +41,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double baseDeviation = difficulty / skill;
             // at what point does the player lose the ability to aim normally
             // increasing this will like high misscount scores more than ringtone maps, and vice versa
-            const double limit_of_proportion = 1.2;
+            const double limit_of_proportion = 1.0;
             // how quickly does the player lose the ability to aim normally at the limit of proportion
             // increasing this has a similar effect as increasing the limit of proportion, but it changes how significant the effect is across maps
             const double breakdown_rate = 5;
@@ -49,7 +49,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             const double contamination_rate = 5e-3;
 
-            const double contamination_scale = 2.3;
+            const double contamination_scale = 2.5;
 
             double cleanProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * adjustedDeviation));
             double contaminatedProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * contamination_scale * adjustedDeviation));
@@ -100,7 +100,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private double calculateTotalValue(double snapDifficulty, double agilityDifficulty, double flowDifficulty)
         {
-            const double skill_multiplier_total = 4.9;
+            const double skill_multiplier_total = 4.5;
             const double combined_snap_norm_exponent = 1.2;
 
             // We compare flow to combined snap and agility because snap by itself doesn't have enough difficulty to be above flow on streams
