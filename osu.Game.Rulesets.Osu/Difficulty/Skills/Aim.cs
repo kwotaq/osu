@@ -49,7 +49,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             const double contamination_rate = 5e-3;
 
-            const double contamination_scale = 2.3;
+            const double contamination_scale = 2.5;
 
             double cleanProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * adjustedDeviation));
             double contaminatedProbability = DiffUtils.Erf(1 / (Math.Sqrt(2) * contamination_scale * adjustedDeviation));
@@ -79,7 +79,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         {
             const double skill_multiplier_snap = 90.5;
             const double skill_multiplier_agility = 185.0;
-            const double skill_multiplier_flow = 270.0;
+            const double skill_multiplier_flow = 275.0;
 
             double snapDifficulty = SnapAimEvaluator.EvaluateDifficultyOf(current, IncludeSliders) * skill_multiplier_snap;
             double agilityDifficulty = AgilityEvaluator.EvaluateDifficultyOf(current) * skill_multiplier_agility;
