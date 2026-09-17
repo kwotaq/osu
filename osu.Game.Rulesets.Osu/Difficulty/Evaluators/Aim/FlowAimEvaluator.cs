@@ -27,7 +27,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             const double velocity_change_multiplier = 0.5;
             const double rhythm_change_cap = 0.1;
-            const double acute_angle_multiplier = 1.3;
+            const double acute_angle_multiplier = 0.9;
 
             var osuLastLastObj = (OsuDifficultyHitObject)current.Previous(1);
 
@@ -118,6 +118,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                     currVelocity = currDistance / osuCurrObj.AdjustedDeltaTime;
                 }
 
+                // Cap velocity to 1.5 diameter distance
+                currVelocity = Math.Min(currVelocity, OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.5 / osuCurrObj.AdjustedDeltaTime);
+                prevVelocity = Math.Min(prevVelocity, OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.5 / osuLastObj.AdjustedDeltaTime);
+
                 // Scale with ratio of difference compared to 0.5 * max dist.
                 double distRatio = DiffUtils.Smoothstep(Math.Abs(prevVelocity - currVelocity) / Math.Max(prevVelocity, currVelocity), 0, 1);
 
@@ -125,8 +129,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 double overlapVelocityBuff = Math.Min(OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.25 / Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime),
                     Math.Abs(prevVelocity - currVelocity));
 
-                flowDifficulty += overlapVelocityBuff *
-                                  distRatio *
+                double velocityChangeBonus = overlapVelocityBuff * distRatio;
+
+                velocityChangeBonus *= DiffUtils.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), 3);
+
+                flowDifficulty += velocityChangeBonus *
                                   calculateOverlapWeight(osuCurrObj, osuLastObj, osuLastLastObj) *
                                   velocity_change_multiplier;
             }
