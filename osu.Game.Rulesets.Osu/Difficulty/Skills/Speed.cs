@@ -45,10 +45,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         protected override double ProcessInternal(DifficultyHitObject current)
         {
-            const double total_multiplier = 0.81;
+            const double total_multiplier = 3.0;
             const double burst_multiplier = 2.31;
-            const double stream_multiplier = 0.16;
-            const double stamina_multiplier = 0.028;
+            const double stream_multiplier = 0.1;
+            const double stamina_multiplier = 0.012;
             const double mean_exponent = 1.25;
 
             if (Mods.Any(m => m is OsuModRelax))
