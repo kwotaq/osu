@@ -58,7 +58,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         private double approachRate;
         private double drainRate;
 
-        private double? speedDeviation;
+        private double? deviation;
 
         private double aimEstimatedSliderBreaks;
         private double speedEstimatedSliderBreaks;
@@ -150,7 +150,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 effectiveMissCount = Math.Min(effectiveMissCount + countOk * okMultiplier + countMeh * mehMultiplier, totalHits);
             }
 
-            speedDeviation = calculateSpeedDeviation(osuAttributes);
+            deviation = calculateDeviation();
 
             double aimValue = computeAimValue(score, osuAttributes);
             double speedValue = computeSpeedValue(score, osuAttributes);
@@ -174,7 +174,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 ScoreBasedEstimatedMissCount = scoreBasedEstimatedMissCount,
                 AimEstimatedSliderBreaks = aimEstimatedSliderBreaks,
                 SpeedEstimatedSliderBreaks = speedEstimatedSliderBreaks,
-                SpeedDeviation = speedDeviation,
+                Deviation = deviation,
                 Total = totalValue
             };
         }
@@ -235,7 +235,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
         private double computeSpeedValue(ScoreInfo score, OsuDifficultyAttributes attributes)
         {
-            if (score.Mods.Any(h => h is OsuModRelax) || speedDeviation == null)
+            if (score.Mods.Any(h => h is OsuModRelax) || deviation == null)
                 return 0.0;
 
             double speedDifficulty = attributes.SpeedDifficulty * calculateSpeedHighDeviationNerf(attributes);
@@ -260,7 +260,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double effectiveHitWindow = 20 * DiffUtils.Pow(4 / speedDifficulty, 0.35);
 
             // Find the proportion of 300s on speed notes assuming the hit window was the effective hit window.
-            double effectiveAccuracy = DiffUtils.Erf(effectiveHitWindow / (double)speedDeviation);
+            double effectiveAccuracy = DiffUtils.Erf(effectiveHitWindow / (double)deviation);
 
             // Scale speed value by normalized accuracy.
             speedValue *= DiffUtils.Pow(effectiveAccuracy, 2);
@@ -410,41 +410,19 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         }
 
         /// <summary>
-        /// Estimates player's deviation on speed notes using <see cref="calculateDeviation"/>, assuming worst-case.
-        /// Treats all speed notes as hit circles.
-        /// </summary>
-        private double? calculateSpeedDeviation(OsuDifficultyAttributes attributes)
-        {
-            if (totalSuccessfulHits == 0)
-                return null;
-
-            // Calculate accuracy assuming the worst case scenario
-            double speedNoteCount = attributes.SpeedNoteCount;
-            speedNoteCount += (totalHits - attributes.SpeedNoteCount) * 0.1;
-
-            // Assume worst case: all mistakes were on speed notes
-            double relevantCountMiss = Math.Min(countMiss, speedNoteCount);
-            double relevantCountMeh = Math.Min(countMeh, speedNoteCount - relevantCountMiss);
-            double relevantCountOk = Math.Min(countOk, speedNoteCount - relevantCountMiss - relevantCountMeh);
-            double relevantCountGreat = Math.Max(0, speedNoteCount - relevantCountMiss - relevantCountMeh - relevantCountOk);
-
-            return calculateDeviation(relevantCountGreat, relevantCountOk, relevantCountMeh);
-        }
-
-        /// <summary>
         /// Estimates the player's tap deviation based on the OD, given number of greats, oks, mehs and misses,
         /// assuming the player's mean hit error is 0. The estimation is consistent in that two SS scores on the same map with the same settings
         /// will always return the same deviation. Misses are ignored because they are usually due to misaiming.
         /// Greats and oks are assumed to follow a normal distribution, whereas mehs are assumed to follow a uniform distribution.
         /// </summary>
-        private double? calculateDeviation(double relevantCountGreat, double relevantCountOk, double relevantCountMeh)
+        private double? calculateDeviation()
         {
-            if (relevantCountGreat + relevantCountOk + relevantCountMeh <= 0)
+            if (countGreat + countOk + countMeh <= 0)
                 return null;
 
             // The sample proportion of successful hits.
-            double n = Math.Max(1, relevantCountGreat + relevantCountOk);
-            double p = relevantCountGreat / n;
+            double n = Math.Max(1, countGreat + countOk);
+            double p = countGreat / n;
 
             // 99% critical value for the normal distribution (one-tailed).
             const double z = 2.32634787404;
@@ -476,7 +454,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             // Compute and add the variance for mehs, assuming that they are uniformly distributed.
             double mehVariance = (mehHitWindow * mehHitWindow + okHitWindow * mehHitWindow + okHitWindow * okHitWindow) / 3;
 
-            deviation = Math.Sqrt(((relevantCountGreat + relevantCountOk) * DiffUtils.Pow(deviation, 2) + relevantCountMeh * mehVariance) / (relevantCountGreat + relevantCountOk + relevantCountMeh));
+            deviation = Math.Sqrt(((countGreat + countOk) * DiffUtils.Pow(deviation, 2) + countMeh * mehVariance) / (countGreat + countOk + countMeh));
 
             return deviation;
         }
@@ -485,13 +463,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         // https://www.desmos.com/calculator/dmogdhzofn
         private double calculateSpeedHighDeviationNerf(OsuDifficultyAttributes attributes)
         {
-            if (speedDeviation == null)
+            if (deviation == null)
                 return 0;
 
             // Decides a point where the difficulty played compared to the speed deviation is assumed to be tapped improperly.
             // Any difficulty above this point is considered "excess" speed difficulty.
             // This is used to cause difficulty above the cutoff to scale logarithmically towards the original speed value thus nerfing the value.
-            double excessSpeedDifficultyCutoff = 2.9 + 1.45 * DiffUtils.Pow(22 / speedDeviation.Value, 5);
+            double excessSpeedDifficultyCutoff = 2.9 + 1.45 * DiffUtils.Pow(22 / deviation.Value, 5);
 
             if (attributes.SpeedDifficulty <= excessSpeedDifficultyCutoff)
                 return 1.0;
@@ -500,7 +478,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double adjustedSpeedDifficulty = scale * (Math.Log((attributes.SpeedDifficulty - excessSpeedDifficultyCutoff) / scale + 1) + excessSpeedDifficultyCutoff / scale);
 
             // 220 UR and less are considered tapped correctly to ensure that normal scores will be punished as little as possible
-            double lerp = 1 - DiffUtils.ReverseLerp(speedDeviation.Value, 22.0, 27.0);
+            double lerp = 1 - DiffUtils.ReverseLerp(deviation.Value, 22.0, 27.0);
             adjustedSpeedDifficulty = double.Lerp(adjustedSpeedDifficulty, attributes.SpeedDifficulty, lerp);
 
             return adjustedSpeedDifficulty / attributes.SpeedDifficulty;

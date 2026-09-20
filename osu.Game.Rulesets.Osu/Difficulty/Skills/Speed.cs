@@ -74,19 +74,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return difficulty;
         }
 
-        public double RelevantObjectCount()
-        {
-            if (ObjectDifficulties.Count == 0)
-                return 0;
-
-            double maxStrain = ObjectDifficulties.Max();
-
-            if (maxStrain == 0)
-                return 0;
-
-            return ObjectDifficulties.Sum(strain => DiffUtils.Logistic(strain / maxStrain, 0.5, 12.0));
-        }
-
         public virtual double CountTopWeightedObjectDifficulties(double difficultyValue)
         {
             if (ObjectDifficulties.Count == 0)
