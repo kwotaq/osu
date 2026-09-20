@@ -71,7 +71,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 ? aimNoSlidersRating / aimRating
                 : 1;
 
-            double speedRating = calculateDifficultyRating(speedDifficultyValue);
+            double speedRating = calculateSpeedDifficultyRating(speedDifficultyValue);
             double readingRating = calculateDifficultyRating(readingDifficultyValue);
 
             double flashlightRating = 0.0;
@@ -135,6 +135,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         }
 
         private double calculateAimDifficultyRating(double difficultyValue) => DiffUtils.Pow(difficultyValue, 0.63) * 0.02275;
+        private double calculateSpeedDifficultyRating(double difficultyValue) => DiffUtils.Pow(difficultyValue, 0.45) * 0.098;
 
         private double calculateDifficultyRating(double difficultyValue) => Math.Sqrt(difficultyValue) * 0.0675;
 
