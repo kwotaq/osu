@@ -23,7 +23,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm
         /// Returns the KT-estimated log-probability of the symbol before updating counts.
         /// KT estimator: P(s) = (n_s + 0.5) / (n + K/2)
         /// </summary>
-        public double UpdateKt(int symbol)
+        public void UpdateKt(int symbol)
         {
             double prob = (counts[symbol] + 0.5) / (totalCount + alphabetSize / 2.0);
             double logProb = Math.Log(prob);
@@ -31,8 +31,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm
             LogProbKt += logProb;
             counts[symbol]++;
             totalCount++;
-
-            return logProb;
         }
 
         /// <summary>
@@ -177,8 +175,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm
         /// <summary>
         /// Returns the surprise (-log P_ctw) the symbol would have if applied now, without
         /// mutating any tree state. Only walks nodes that already exist along the context path
-        /// (bounded by maxDepth); missing nodes are treated as fresh/uncreated. Cheap enough to
-        /// call repeatedly for comparing candidates, unlike cloning the whole tree.
+        /// (bounded by maxDepth); missing nodes are treated as fresh/uncreated.
         /// </summary>
         public double Peek(int symbol)
         {

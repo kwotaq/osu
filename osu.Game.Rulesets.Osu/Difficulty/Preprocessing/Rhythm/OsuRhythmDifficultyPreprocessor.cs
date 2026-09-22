@@ -16,14 +16,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm
             public readonly double Time;
             public readonly double Delta;
             public readonly double HitWindow;
-            public readonly OsuDifficultyHitObject? Source;
+            public readonly OsuDifficultyHitObject? HitObject;
 
-            public RhythmEvent(double time, double delta, double hitWindow, OsuDifficultyHitObject? source)
+            public RhythmEvent(double time, double delta, double hitWindow, OsuDifficultyHitObject? hitObject)
             {
                 Time = time;
                 Delta = delta;
                 HitWindow = hitWindow;
-                Source = source;
+                HitObject = hitObject;
             }
         }
 
@@ -84,7 +84,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm
 
             for (int i = 1; i < events.Count;)
             {
-                if (events[i].Source == null)
+                if (events[i].HitObject == null)
                 {
                     i++;
                     continue;
@@ -93,26 +93,30 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm
                 double delta = Math.Max(events[i].Delta, 1e-7);
                 double epsilon = events[i].HitWindow * epsilonFactor;
 
-                int end = i;
+                int clusterEnd = i;
 
-                while (end + 1 < events.Count && events[end + 1].Source != null && Math.Abs(Math.Max(events[end + 1].Delta, 1e-7) - delta) < epsilon)
-                    end++;
+                while (
+                    clusterEnd + 1 < events.Count &&
+                    events[clusterEnd + 1].HitObject != null &&
+                    Math.Abs(Math.Max(events[clusterEnd + 1].Delta, 1e-7) - delta) < epsilon
+                )
+                    clusterEnd++;
 
-                if (end > i)
+                if (clusterEnd > i)
                 {
                     for (int k = Math.Max(lastCovered + 1, 0); k < i - 1; k++)
                         clusters.Add(new List<RhythmEvent> { events[k] });
 
                     var cluster = new List<RhythmEvent>();
 
-                    for (int j = i - 1; j <= end; j++)
+                    for (int j = i - 1; j <= clusterEnd; j++)
                         cluster.Add(events[j]);
 
                     clusters.Add(cluster);
-                    lastCovered = end;
+                    lastCovered = clusterEnd;
                 }
 
-                i = end + 1;
+                i = clusterEnd + 1;
             }
 
             for (int k = Math.Max(lastCovered + 1, 0); k < events.Count; k++)
@@ -138,7 +142,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm
             for (int i = 0; i < clusters.Count; i++)
             {
                 var cluster = clusters[i];
-                bool tailLeading = cluster.Count > 1 && cluster[0].Source == null;
+                bool tailLeading = cluster.Count > 1 && cluster[0].HitObject == null;
 
                 int assignStart = 0;
 
@@ -173,7 +177,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm
                     scored.ParitySurprise * timeScale, scored.GapSurprise * timeScale, scored.InternalSurprise * timeScale);
 
                 for (int j = assignStart; j < cluster.Count; j++)
-                    cluster[j].Source?.RhythmClusters.Add(data);
+                    cluster[j].HitObject?.RhythmClusters.Add(data);
             }
 
             // Remove singlet entries from notes that also belong to larger clusters.
@@ -181,8 +185,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm
             {
                 foreach (var evt in cluster)
                 {
-                    if (evt.Source != null && evt.Source.RhythmClusters.Count > 1)
-                        evt.Source.RhythmClusters.RemoveAll(c => c.Size == 1);
+                    if (evt.HitObject != null && evt.HitObject.RhythmClusters.Count > 1)
+                        evt.HitObject.RhythmClusters.RemoveAll(c => c.Size == 1);
                 }
             }
         }
@@ -300,7 +304,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm
                 {
                     int nextIndex = i + 1;
 
-                    if (nextIndex < clusters.Count && clusters[nextIndex][0].Source == null)
+                    if (nextIndex < clusters.Count && clusters[nextIndex][0].HitObject == null)
                         nextIndex++;
 
                     if (nextIndex >= clusters.Count)
