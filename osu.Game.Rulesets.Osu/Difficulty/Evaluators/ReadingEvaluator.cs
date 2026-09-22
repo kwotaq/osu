@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
@@ -31,17 +32,21 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             double constantAngleNerfFactor = getConstantAngleNerfFactor(currObj);
 
             double noteDensityDifficulty = calculateDensityDifficulty(nextObj, velocity, constantAngleNerfFactor, pastObjectDifficultyInfluence, currentVisibleObjectDensity);
+            noteDensityDifficulty *= highBpmBonus(currObj.AdjustedDeltaTime);
 
             double hiddenDifficulty = hidden
                 ? calculateHiddenDifficulty(currObj, pastObjectDifficultyInfluence, currentVisibleObjectDensity, velocity, constantAngleNerfFactor)
                 : 0;
+            hiddenDifficulty *= highBpmBonus(currObj.AdjustedDeltaTime);
 
             double preemptDifficulty = calculatePreemptDifficulty(velocity, constantAngleNerfFactor, currObj.Preempt);
+            preemptDifficulty *= highBpmBonus(currObj.AdjustedDeltaTime);
 
-            double readingDifficulty = DiffUtils.Norm(1.5, preemptDifficulty, hiddenDifficulty, noteDensityDifficulty);
+            double rhythmReading = calculateRhythmReading(currObj, currentVisibleObjectDensity, hidden);
 
-            // Having less time to process information is harder
-            readingDifficulty *= highBpmBonus(currObj.AdjustedDeltaTime);
+            // Console.Out.WriteLine(rhythmReading);
+
+            double readingDifficulty = DiffUtils.Norm(1.5, preemptDifficulty, hiddenDifficulty, noteDensityDifficulty, rhythmReading);
 
             return readingDifficulty;
         }
@@ -138,6 +143,73 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 hiddenDifficulty += hidden_multiplier * 2500 / DiffUtils.Pow(currObj.AdjustedDeltaTime, 1.5); // Perfect stacks are harder the less time between notes
 
             return hiddenDifficulty;
+        }
+
+        private static double calculateRhythmReading(OsuDifficultyHitObject currObj, double currentVisibleObjectDensity, bool hidden)
+        {
+            double rhythmReading = 0;
+
+            foreach (var loopObj in retrievePastVisibleObjects(currObj))
+            {
+                double mismatch = calculateRhythmConstants(loopObj);
+
+                rhythmReading += loopObj.RhythmClusters.Sum(c => c.Surprise) * mismatch;
+            }
+
+            rhythmReading /= currObj.Preempt;
+
+            // Console.Out.WriteLine(sum);
+
+            return rhythmReading * 2000;
+        }
+
+        private static double calculateRhythmConstants(OsuDifficultyHitObject currObj)
+        {
+            var prevObj = (OsuDifficultyHitObject)currObj.Previous(0);
+
+            if (prevObj == null)
+                return 1;
+
+            // Use custom cap value to ensure that at this point delta time is actually zero
+            double currTimeDelta = Math.Max(currObj.DeltaTime, 1e-7);
+            double prevTimeDelta = Math.Max(prevObj.DeltaTime, 1e-7);
+
+            double timeRatio = Math.Max(currTimeDelta / prevTimeDelta, prevTimeDelta / currTimeDelta);
+
+            double currDistanceDelta = Math.Max(currObj.LazyJumpDistance, 1e-7);
+            double prevDistanceDelta = Math.Max(prevObj.LazyJumpDistance, 1e-7);
+
+            double spacingRatio = currDistanceDelta / prevDistanceDelta;
+
+            double mismatch = calculateMismatch(timeRatio, spacingRatio);
+
+            if (prevObj.BaseObject is Slider)
+            {
+                double sliderLazyEndDelta = currObj.MinimumJumpTime;
+                double lazyTimeRatio = Math.Max(currTimeDelta / sliderLazyEndDelta, sliderLazyEndDelta / currTimeDelta);
+
+                double sliderRealEndDelta = currObj.LastObjectEndDeltaTime;
+                double realTimeRatio = Math.Max(currTimeDelta / sliderRealEndDelta, sliderRealEndDelta / currTimeDelta);
+
+                prevDistanceDelta = Math.Max(prevObj.TravelDistance, 1e-7);
+
+                spacingRatio = currDistanceDelta / prevDistanceDelta;
+
+                double mismatchLazy = calculateMismatch(lazyTimeRatio, spacingRatio);
+
+                double mismatchReal = calculateMismatch(realTimeRatio, spacingRatio);
+
+                mismatch = Math.Min(mismatchReal, mismatchLazy);
+            }
+
+            return mismatch;
+        }
+
+        private static double calculateMismatch(double timeRatio, double spacingRatio)
+        {
+            double changeRatio = timeRatio * spacingRatio;
+
+            return Math.Min(1.2, Math.Pow(changeRatio - 1, 2) * 1000) * Math.Min(1.0, Math.Pow(spacingRatio - 1, 2) * 1000);
         }
 
         private static double getPastObjectDifficultyInfluence(OsuDifficultyHitObject currObj)

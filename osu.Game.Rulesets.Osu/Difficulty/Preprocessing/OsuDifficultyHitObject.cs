@@ -8,6 +8,7 @@ using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Objects;
 using osu.Game.Rulesets.Osu.Mods;
+using osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm;
 using osu.Game.Rulesets.Osu.Objects;
 using osuTK;
 
@@ -131,6 +132,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
         /// Object's immediate OverallDifficulty value calculated from the raw hitwindow.
         /// </summary>
         public double OverallDifficulty => (79.5 - HitWindowGreat / 2) / 6;
+
+        public List<RhythmClusterData> RhythmClusters { get; } = new List<RhythmClusterData>();
 
         public OsuDifficultyHitObject(HitObject hitObject, HitObject lastObject, double clockRate, List<DifficultyHitObject> objects, int index)
             : base(hitObject, lastObject, clockRate, objects, index)
