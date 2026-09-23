@@ -159,7 +159,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 objects.Add(new OsuDifficultyHitObject(beatmap.HitObjects[i], beatmap.HitObjects[i - 1], clockRate, objects, objects.Count));
             }
 
-            Preprocessing.Rhythm.OsuRhythmDifficultyPreprocessor.ProcessAndAssign(objects, maxDepth: 4, epsilonFactor: 0.3);
+            Preprocessing.Rhythm.OsuRhythmDifficultyPreprocessor.ProcessAndAssign(objects, maxDepth: 8, spacingEpsilonFactor: 0.2, epsilonFactor: 0.4);
 
             return objects;
         }

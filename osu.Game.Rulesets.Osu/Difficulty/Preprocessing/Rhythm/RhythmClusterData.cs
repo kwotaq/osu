@@ -12,10 +12,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm
         public readonly double ParitySurprise;
         public readonly double GapSurprise;
         public readonly double InternalSurprise;
+        public readonly double PairSurprise;
 
-        public double Surprise => ParitySurprise + GapSurprise + InternalSurprise;
+        public double Surprise => ParitySurprise + GapSurprise + InternalSurprise + PairSurprise;
 
-        public RhythmClusterData(int index, int size, double startTime, double endTime, double paritySurprise, double gapSurprise, double internalSurprise)
+        public RhythmClusterData(int index, int size, double startTime, double endTime,
+                                 double paritySurprise, double gapSurprise, double internalSurprise, double pairSurprise)
         {
             Index = index;
             Size = size;
@@ -24,6 +26,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.Rhythm
             ParitySurprise = paritySurprise;
             GapSurprise = gapSurprise;
             InternalSurprise = internalSurprise;
+            PairSurprise = pairSurprise;
         }
     }
 }
