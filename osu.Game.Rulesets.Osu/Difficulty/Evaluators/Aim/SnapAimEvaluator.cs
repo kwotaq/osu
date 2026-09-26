@@ -67,9 +67,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             double wideAngleBonus = Math.Min(currVelocity, prevVelocity) * wideness;
 
-            // Penalize angle repetition. It is important to do it _before_ multiplying by velocity because we compare raw wideness here
-            wideAngleBonus *= 0.25 + 0.75 * (1 - Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuLastObj.Angle.Value), 3)));
-
             var osuLast2Obj = (OsuDifficultyHitObject)osuCurrObj.Previous(2);
 
             if (osuLast2Obj != null)
@@ -86,6 +83,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                     wideAngleBonus *= 1 - 0.55 * (1 - distance);
                 }
             }
+
+            // Penalize rhythm changes.
+            wideAngleBonus *= DiffUtils.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), 3);
 
             return wideAngleBonus * wide_angle_multiplier;
         }
@@ -112,7 +112,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             double distRatio = DiffUtils.Smoothstep(Math.Abs(prevVelocity - currVelocity) / Math.Max(prevVelocity, currVelocity), 0, 1);
 
             // Reward for % distance up to 125 / strainTime for overlaps where velocity is still changing.
-            double overlapVelocityBuff = Math.Min(OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.25 / Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), Math.Abs(prevVelocity - currVelocity));
+            double overlapVelocityBuff = Math.Min(OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.25 / Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime),
+                Math.Abs(prevVelocity - currVelocity));
 
             double velocityChangeBonus = overlapVelocityBuff * distRatio;
 
