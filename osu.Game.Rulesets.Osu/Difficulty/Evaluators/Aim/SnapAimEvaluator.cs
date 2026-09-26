@@ -58,7 +58,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj,
                                                       double currVelocity, double prevVelocity)
         {
-            const double wide_angle_multiplier = 0.65;
+            const double wide_angle_multiplier = 0.6;
 
             if (osuCurrObj.Angle == null || osuLastObj.Angle == null)
                 return 0;
@@ -124,7 +124,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
         private static double calculateSliderBonus(OsuDifficultyHitObject osuCurrObj)
         {
-            const double slider_multiplier = 1.2;
+            const double slider_multiplier = 1.22;
 
             // Reward sliders based on velocity.
             double sliderBonus = osuCurrObj.TravelDistance / osuCurrObj.TravelTime;
