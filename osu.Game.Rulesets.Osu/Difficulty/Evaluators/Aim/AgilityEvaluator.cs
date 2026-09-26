@@ -54,7 +54,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             double combinedDelta = osuCurrObj.AdjustedDeltaTime + previousDelta * previous_delta_influence;
 
-            double agilityDifficulty = baseDifficulty * 10_000_000 / DiffUtils.Pow(combinedDelta, 3.1);
+            double agilityDifficulty = baseDifficulty * 50_000_000 / DiffUtils.Pow(combinedDelta, 3.5);
 
             agilityDifficulty *= osuCurrObj.SmallCircleBonus;
 

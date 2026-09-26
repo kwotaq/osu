@@ -58,7 +58,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj,
                                                       double currVelocity, double prevVelocity)
         {
-            const double wide_angle_multiplier = 0.75;
+            const double wide_angle_multiplier = 0.65;
 
             if (osuCurrObj.Angle == null || osuLastObj.Angle == null)
                 return 0;
@@ -194,6 +194,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             return DiffUtils.Pow(baseNerf + (1 - baseNerf) * vectorRepetition * maximum_vector_influence * stackFactor, 2);
         }
 
-        private static double highBpmBonus(double ms) => 1 / (1 - DiffUtils.Pow(0.03, DiffUtils.Pow(ms / 1000, 0.65)));
+        private static double highBpmBonus(double ms) => 1 / (1 - DiffUtils.Pow(0.03, DiffUtils.Pow(ms / 1000, 0.55)));
     }
 }
