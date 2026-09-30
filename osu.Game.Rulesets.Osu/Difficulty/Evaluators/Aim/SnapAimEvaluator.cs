@@ -91,12 +91,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj,
                                                       double currDistance, double prevDistance, bool withSliderTravelDistance)
         {
-            const double wide_angle_multiplier = 12.0;
+            const double wide_angle_multiplier = 27.5;
 
             if (osuCurrObj.Angle == null || osuLastObj.Angle == null)
                 return 0;
 
             double wideAngleBonus = AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
+
+            wideAngleBonus *= 0.25 + 0.75 * Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuLastObj.Angle.Value), 3));
 
             // Rescaling velocity for the wide angle bonus
             const double wide_angle_time_scale = 1.5;
@@ -112,25 +114,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             wideAngleBonus *= Math.Min(currRescaledVelocity, prevRescaledVelocity);
 
-            var osuLast2Obj = (OsuDifficultyHitObject)osuCurrObj.Previous(2);
-
-            if (osuLast2Obj != null)
-            {
-                // If objects just go back and forth through a middle point - don't give as much wide bonus
-                // Use Previous(2) and Previous(0) because angles calculation is done prevprev-prev-curr, so any object's angle's center point is always the previous object
-                var lastBaseObject = (OsuHitObject)osuLastObj.BaseObject;
-                var last2BaseObject = (OsuHitObject)osuLast2Obj.BaseObject;
-
-                float distance = (last2BaseObject.StackedPosition - lastBaseObject.StackedPosition).Length;
-
-                if (distance < 1)
-                {
-                    wideAngleBonus *= 1 - 0.55 * (1 - distance);
-                }
-            }
-
             // Penalize rhythm changes.
-            wideAngleBonus *= Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime);
+            wideAngleBonus *= Math.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), 3);
 
             return wideAngleBonus * wide_angle_multiplier;
         }
