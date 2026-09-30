@@ -51,6 +51,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             // We use reduced CS bonus here because the bonus was made for an evaluator with a different d/t scaling
             flowDifficulty *= Math.Sqrt(osuCurrObj.SmallCircleBonus);
 
+            // Rhythm changes are harder to flow
+            flowDifficulty *= 1 + Math.Min(rhythm_change_cap,
+                DiffUtils.Pow((Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) - Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime)) / 50, 4));
+
             if (osuCurrObj.Angle != null && osuLastObj.Angle != null)
             {
                 double angleDifference = Math.Abs(osuCurrObj.Angle.Value - osuLastObj.Angle.Value);
@@ -114,10 +118,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                     currVelocity = currDistance / osuCurrObj.AdjustedDeltaTime;
                 }
 
-                // Cap velocity to 1.5 diameter distance
-                currVelocity = Math.Min(currVelocity, OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.5 / osuCurrObj.AdjustedDeltaTime);
-                prevVelocity = Math.Min(prevVelocity, OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.5 / osuLastObj.AdjustedDeltaTime);
-
                 // Scale with ratio of difference compared to 0.5 * max dist.
                 double distRatio = DiffUtils.Smoothstep(Math.Abs(prevVelocity - currVelocity) / Math.Max(prevVelocity, currVelocity), 0, 1);
 
@@ -125,11 +125,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 double overlapVelocityBuff = Math.Min(OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.25 / Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime),
                     Math.Abs(prevVelocity - currVelocity));
 
-                double velocityChangeBonus = overlapVelocityBuff * distRatio;
-
-                velocityChangeBonus *= DiffUtils.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), 3);
-
-                flowDifficulty += velocityChangeBonus *
+                flowDifficulty += overlapVelocityBuff *
+                                  distRatio *
                                   calculateOverlapWeight(osuCurrObj, osuLastObj, osuLastLastObj) *
                                   velocity_change_multiplier;
             }
