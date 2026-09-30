@@ -1,9 +1,11 @@
 ﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
+using System;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
+using osu.Game.Rulesets.Osu.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Objects;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
@@ -15,13 +17,30 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         /// </summary>
         public static double EvaluateDifficultyOf(DifficultyHitObject current)
         {
-            const double previous_delta_influence = 0.5;
+            const double previous_delta_influence = 0.75;
 
             if (current.BaseObject is Spinner)
                 return 0;
 
             var osuCurrObj = (OsuDifficultyHitObject)current;
             var osuPrevObj = (OsuDifficultyHitObject?)current.Previous();
+
+            double baseDifficulty = 1;
+
+            if (osuCurrObj.Angle != null && osuPrevObj?.Angle != null)
+            {
+                double addition = 0;
+
+                // angle switching bonus
+                addition += 0.8 * (1 - Math.Min(AngleUtils.CalculateAcuteness(osuCurrObj.Angle.Value), DiffUtils.Pow(AngleUtils.CalculateAcuteness(osuPrevObj.Angle.Value), 3)));
+
+                addition += 0.7 * AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
+
+                // Penalize rhythm changes.
+                addition *= DiffUtils.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuPrevObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuPrevObj.AdjustedDeltaTime), 3);
+
+                baseDifficulty += addition;
+            }
 
             // For objects that are stacked we want to reduce the agility difficulty slightly by combining delta times of both objects together
             // Because we can assume that they likely would be done in one movement.
@@ -35,9 +54,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             double combinedDelta = osuCurrObj.AdjustedDeltaTime + previousDelta * previous_delta_influence;
 
-            double agilityDifficulty = DiffUtils.Pow(1000 / combinedDelta, 2);
+            double agilityDifficulty = baseDifficulty * 10_000_000 / DiffUtils.Pow(combinedDelta, 3.1);
 
-            agilityDifficulty *= DiffUtils.Pow(osuCurrObj.SmallCircleBonus, 1.5);
+            agilityDifficulty *= osuCurrObj.SmallCircleBonus;
 
             return agilityDifficulty;
         }
