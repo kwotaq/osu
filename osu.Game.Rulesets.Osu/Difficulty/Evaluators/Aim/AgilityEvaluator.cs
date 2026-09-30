@@ -17,7 +17,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         /// </summary>
         public static double EvaluateDifficultyOf(DifficultyHitObject current)
         {
-            const double previous_delta_influence = 0.75;
+            const double previous_delta_influence = 1;
 
             if (current.BaseObject is Spinner)
                 return 0;
@@ -32,9 +32,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 double addition = 0;
 
                 // angle switching bonus
-                addition += 0.8 * (1 - Math.Min(AngleUtils.CalculateAcuteness(osuCurrObj.Angle.Value), DiffUtils.Pow(AngleUtils.CalculateAcuteness(osuPrevObj.Angle.Value), 3)));
+                addition += (1 - Math.Min(AngleUtils.CalculateAcuteness(osuCurrObj.Angle.Value), DiffUtils.Pow(AngleUtils.CalculateAcuteness(osuPrevObj.Angle.Value), 3)));
 
-                addition += 0.7 * AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
+                addition += AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
 
                 // Penalize rhythm changes.
                 addition *= DiffUtils.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuPrevObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuPrevObj.AdjustedDeltaTime), 3);
@@ -54,7 +54,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             double combinedDelta = osuCurrObj.AdjustedDeltaTime + previousDelta * previous_delta_influence;
 
-            double agilityDifficulty = baseDifficulty * 10_000_000 / DiffUtils.Pow(combinedDelta, 3.1);
+            double agilityDifficulty = baseDifficulty * 10_000_000 / DiffUtils.Pow(combinedDelta, 3.5);
 
             agilityDifficulty *= osuCurrObj.SmallCircleBonus;
 
