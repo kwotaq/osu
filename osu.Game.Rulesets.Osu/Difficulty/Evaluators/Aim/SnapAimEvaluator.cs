@@ -57,7 +57,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
         private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj)
         {
-            const double wide_angle_multiplier = 2.0;
+            const double wide_angle_multiplier = 2.3;
 
             if (osuCurrObj.Angle == null || osuLastObj.Angle == null)
                 return 0;
