@@ -33,8 +33,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
                 // angle switching bonus
                 double angleSwitchingBonus = (1 - Math.Min(AngleUtils.CalculateAcuteness(osuCurrObj.Angle.Value), DiffUtils.Pow(AngleUtils.CalculateAcuteness(osuPrevObj.Angle.Value), 3))) *
-                                             DiffUtils.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuPrevObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuPrevObj.AdjustedDeltaTime),
-                                                 3) *
                                              DiffUtils.ReverseLerp(osuPrevObj.LazyJumpDistance, OsuDifficultyHitObject.NORMALISED_RADIUS, OsuDifficultyHitObject.NORMALISED_DIAMETER);
 
                 double wideAngleBonus = AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
