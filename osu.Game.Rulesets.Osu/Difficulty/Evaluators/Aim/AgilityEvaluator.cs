@@ -32,7 +32,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 double addition = 0;
 
                 // angle switching bonus
-                addition += (1 - Math.Min(AngleUtils.CalculateAcuteness(osuCurrObj.Angle.Value), DiffUtils.Pow(AngleUtils.CalculateAcuteness(osuPrevObj.Angle.Value), 3)));
+                double angleSwitchingBonus = (1 - Math.Min(AngleUtils.CalculateAcuteness(osuCurrObj.Angle.Value), DiffUtils.Pow(AngleUtils.CalculateAcuteness(osuPrevObj.Angle.Value), 3)));
+
+                double wideAngleBonus = AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
+
+                addition += DiffUtils.Norm(1.5, angleSwitchingBonus, wideAngleBonus);
 
                 // Penalize rhythm changes.
                 addition *= DiffUtils.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuPrevObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuPrevObj.AdjustedDeltaTime), 3);
