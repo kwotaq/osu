@@ -8,9 +8,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Utils
     public static class AngleUtils
     {
         public static double CalculateWideness(double angle)
-            => DiffUtils.Smoothstep(angle, double.DegreesToRadians(40), double.DegreesToRadians(140));
+            => DiffUtils.Smoothstep(angle, double.DegreesToRadians(60), double.DegreesToRadians(120));
 
         public static double CalculateAcuteness(double angle)
-            => DiffUtils.Smoothstep(angle, double.DegreesToRadians(140), double.DegreesToRadians(40));
+            => DiffUtils.Smoothstep(angle, double.DegreesToRadians(120), double.DegreesToRadians(60));
     }
 }
