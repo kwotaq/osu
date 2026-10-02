@@ -31,13 +31,17 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             {
                 double addition = 0;
 
+                double distanceFactor = DiffUtils.ReverseLerp(osuPrevObj.LazyJumpDistance, OsuDifficultyHitObject.NORMALISED_RADIUS, OsuDifficultyHitObject.NORMALISED_DIAMETER);
+
                 // angle switching bonus
                 double angleSwitchingBonus = (1 - Math.Min(AngleUtils.CalculateAcuteness(osuCurrObj.Angle.Value), DiffUtils.Pow(AngleUtils.CalculateAcuteness(osuPrevObj.Angle.Value), 3))) *
-                                             DiffUtils.ReverseLerp(osuPrevObj.LazyJumpDistance, OsuDifficultyHitObject.NORMALISED_RADIUS, OsuDifficultyHitObject.NORMALISED_DIAMETER);
+                                             distanceFactor;
 
                 double wideAngleBonus = AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
 
-                addition += DiffUtils.Norm(1.5, angleSwitchingBonus, wideAngleBonus);
+                wideAngleBonus *= (0.25 + 0.75 * Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuPrevObj.Angle.Value), 3))) * distanceFactor;
+
+                addition += DiffUtils.Norm(1.5, angleSwitchingBonus, wideAngleBonus * 4);
 
                 // Penalize rhythm changes.
                 addition *= DiffUtils.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuPrevObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuPrevObj.AdjustedDeltaTime), 3);
