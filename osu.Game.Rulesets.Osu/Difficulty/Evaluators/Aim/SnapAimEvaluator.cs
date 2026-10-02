@@ -57,14 +57,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
         private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj)
         {
-            const double wide_angle_multiplier = 2.3;
+            const double wide_angle_multiplier = 1.5;
 
             if (osuCurrObj.Angle == null || osuLastObj.Angle == null)
                 return 0;
 
             double wideAngleBonus = AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
 
-            wideAngleBonus *= 0.5 + 0.5 * Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuLastObj.Angle.Value), 3));
+            wideAngleBonus *= 0.75 + 0.25 * Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuLastObj.Angle.Value), 3));
 
             // Penalize rhythm changes.
             wideAngleBonus *= Math.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), 3);
