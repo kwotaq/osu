@@ -25,7 +25,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             if (current.BaseObject is Spinner || current.Index <= 1 || osuLastObj.BaseObject is Spinner)
                 return 0;
 
-            const double velocity_change_multiplier = 2.2;
+            const double velocity_change_multiplier = 1.2;
             const double rhythm_change_cap = 0.1;
             const double acute_angle_multiplier = 0.9;
 
@@ -62,7 +62,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 double angularVelocity = angleDifferenceAdjusted / (osuCurrObj.AdjustedDeltaTime * 0.1);
 
                 // Low angular velocity flow (angles are consistent) is easier to follow than erratic flow
-                flowDifficulty *= 0.8 + Math.Sqrt(angularVelocity / 200.0);
+                flowDifficulty *= 0.8 + Math.Sqrt(angularVelocity / 270.0);
             }
 
             if (osuCurrObj.Angle != null && osuNextObj?.Angle != null)
@@ -118,7 +118,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                     currVelocity = currDistance / osuCurrObj.AdjustedDeltaTime;
                 }
 
-                const double velocity_distance_cap = OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.0;
+                const double velocity_distance_cap = OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.1;
 
                 currVelocity = Math.Min(currVelocity, velocity_distance_cap / osuCurrObj.AdjustedDeltaTime);
                 prevVelocity = Math.Min(prevVelocity, velocity_distance_cap / osuLastObj.AdjustedDeltaTime);
