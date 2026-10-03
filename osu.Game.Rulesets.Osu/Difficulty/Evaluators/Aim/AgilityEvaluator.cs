@@ -41,7 +41,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
                 wideAngleBonus *= (0.25 + 0.75 * Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuPrevObj.Angle.Value), 3))) * distanceFactor * rhythmFactor;
 
-                addition += DiffUtils.Norm(2, angleSwitchingBonus, wideAngleBonus * 5.5);
+                addition += DiffUtils.Norm(2, angleSwitchingBonus, wideAngleBonus);
 
                 baseDifficulty += addition;
             }

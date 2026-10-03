@@ -39,6 +39,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             // Penalize angle repetition.
             snapDifficulty *= vectorAngleRepetition(osuCurrObj, osuLastObj);
+            snapDifficulty += calculateWideAngleBonus(osuCurrObj, osuLastObj, currVelocity, prevVelocity);
             snapDifficulty += calculateVelocityChangeBonus(withSliderTravelDistance, prevVelocity, currVelocity, currDistance, osuCurrObj, osuLastObj);
 
             if (osuCurrObj.BaseObject is Slider && withSliderTravelDistance)
@@ -52,6 +53,26 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             snapDifficulty *= highBpmBonus(osuCurrObj.AdjustedDeltaTime);
 
             return snapDifficulty;
+        }
+
+        private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj,
+                                                      double currVelocity, double prevVelocity)
+        {
+            const double wide_angle_multiplier = 0.6;
+
+            if (osuCurrObj.Angle == null || osuLastObj.Angle == null)
+                return 0;
+
+            double distanceFactor = DiffUtils.ReverseLerp(osuLastObj.LazyJumpDistance, OsuDifficultyHitObject.NORMALISED_RADIUS, OsuDifficultyHitObject.NORMALISED_DIAMETER);
+            double rhythmFactor = DiffUtils.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), 3);
+
+            double wideness = AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
+
+            double wideAngleBonus = Math.Min(currVelocity, prevVelocity) * wideness;
+
+            wideAngleBonus *= (0.5 + 0.5 * Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuLastObj.Angle.Value), 3))) * distanceFactor * rhythmFactor;
+
+            return wideAngleBonus * wide_angle_multiplier;
         }
 
         private static double calculateVelocityChangeBonus(bool withSliderTravelDistance, double prevVelocity, double currVelocity,
