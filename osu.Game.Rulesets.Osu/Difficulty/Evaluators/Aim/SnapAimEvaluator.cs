@@ -39,7 +39,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             // Penalize angle repetition.
             snapDifficulty *= vectorAngleRepetition(osuCurrObj, osuLastObj);
-            snapDifficulty += calculateWideAngleBonus(osuCurrObj, osuLastObj, currVelocity, prevVelocity);
+            snapDifficulty += calculateWideAngleBonus(osuCurrObj, osuLastObj);
             snapDifficulty += calculateVelocityChangeBonus(withSliderTravelDistance, prevVelocity, currVelocity, currDistance, osuCurrObj, osuLastObj);
 
             if (osuCurrObj.BaseObject is Slider && withSliderTravelDistance)
@@ -55,22 +55,23 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             return snapDifficulty;
         }
 
-        private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj,
-                                                      double currVelocity, double prevVelocity)
+        private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj)
         {
-            const double wide_angle_multiplier = 0.6;
+            const double wide_angle_multiplier = 65_000_000;
 
             if (osuCurrObj.Angle == null || osuLastObj.Angle == null)
                 return 0;
 
-            double distanceFactor = DiffUtils.ReverseLerp(osuLastObj.LazyJumpDistance, OsuDifficultyHitObject.NORMALISED_RADIUS, OsuDifficultyHitObject.NORMALISED_DIAMETER);
-            double rhythmFactor = DiffUtils.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), 3);
+            double wideAngleBonus = AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
 
-            double wideness = AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
+            wideAngleBonus *= 0.5 + 0.5 * Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuLastObj.Angle.Value), 3));
 
-            double wideAngleBonus = Math.Min(currVelocity, prevVelocity) * wideness;
+            wideAngleBonus *= DiffUtils.ReverseLerp(osuLastObj.LazyJumpDistance, OsuDifficultyHitObject.NORMALISED_RADIUS, OsuDifficultyHitObject.NORMALISED_DIAMETER);
 
-            wideAngleBonus *= (0.5 + 0.5 * Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuLastObj.Angle.Value), 3))) * distanceFactor * rhythmFactor;
+            wideAngleBonus /= DiffUtils.Pow(osuCurrObj.AdjustedDeltaTime, 3.5);
+
+            // Penalize rhythm changes.
+            wideAngleBonus *= Math.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), 3);
 
             return wideAngleBonus * wide_angle_multiplier;
         }
