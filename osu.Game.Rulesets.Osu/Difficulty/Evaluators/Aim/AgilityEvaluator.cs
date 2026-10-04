@@ -39,9 +39,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
                 double wideAngleBonus = AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
 
-                wideAngleBonus *= (0.25 + 0.75 * Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuPrevObj.Angle.Value), 3))) * distanceFactor * rhythmFactor;
+                wideAngleBonus *= (0.5 + 0.5 * Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuPrevObj.Angle.Value), 3))) * distanceFactor * rhythmFactor;
 
-                addition += DiffUtils.Norm(2, angleSwitchingBonus, wideAngleBonus);
+                addition += DiffUtils.Norm(1.5, angleSwitchingBonus, wideAngleBonus) * 1.2;
 
                 baseDifficulty += addition;
             }
@@ -58,7 +58,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             double combinedDelta = osuCurrObj.AdjustedDeltaTime + previousDelta * previous_delta_influence;
 
-            double agilityDifficulty = baseDifficulty * 1_000_000 / DiffUtils.Pow(combinedDelta, 3.0);
+            double agilityDifficulty = baseDifficulty * 10_000_000 / DiffUtils.Pow(combinedDelta, 3.5);
 
             agilityDifficulty *= osuCurrObj.SmallCircleBonus;
 
