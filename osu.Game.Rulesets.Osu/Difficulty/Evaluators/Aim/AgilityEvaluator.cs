@@ -41,7 +41,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             double combinedDelta = osuCurrObj.AdjustedDeltaTime + previousDelta * previous_delta_influence;
 
-            double agilityDifficulty = baseDifficulty * 10_000_000 / DiffUtils.Pow(combinedDelta, 3.1);
+            double agilityDifficulty = baseDifficulty * 7_500_000 / DiffUtils.Pow(combinedDelta, 3.0);
 
             agilityDifficulty *= osuCurrObj.SmallCircleBonus;
 
@@ -50,7 +50,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
         private static double calculateAngleSwitchingBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject? osuPrevObj)
         {
-            const double angle_switching_bonus = 0.8;
+            const double angle_switching_bonus = 1;
 
             if (osuCurrObj.Angle == null || osuPrevObj?.Angle == null)
                 return 0;

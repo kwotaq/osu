@@ -69,7 +69,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             }
 
             // Final velocity is being raised to a power because flow difficulty scales harder with both high distance and time, and we want to account for that
-            flowDifficulty = DiffUtils.Pow(flowDifficulty, 1.45);
+            flowDifficulty = DiffUtils.Pow(flowDifficulty, 1.2);
 
             // Reduce difficulty for low spacing since spacing below radius is always to be flowed
             return flowDifficulty * DiffUtils.Smootherstep(currDistance, 0, OsuDifficultyHitObject.NORMALISED_RADIUS);
@@ -99,7 +99,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             double angleDifferenceAdjusted = Math.Sin(angleDifference / 2) * 180.0;
             double angularVelocity = angleDifferenceAdjusted / (current.AdjustedDeltaTime * 0.1);
 
-            return 0.8 + Math.Sqrt(angularVelocity / 270.0);
+            return 0.8 + Math.Sqrt(angularVelocity / 200.0);
         }
 
         private static double calculateAcuteAngleBonus(
@@ -109,7 +109,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             OsuDifficultyHitObject? next,
             double currVelocity)
         {
-            const double acute_angle_multiplier = 0.9;
+            const double acute_angle_multiplier = 0.7;
 
             if (current.Angle == null || next?.Angle == null)
                 return 0;
@@ -165,7 +165,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             double overlappedNotesWeight,
             bool withSliderTravelDistance)
         {
-            const double velocity_change_multiplier = 1.9;
+            const double velocity_change_multiplier = 3.4;
 
             if (Math.Max(prevVelocity, currVelocity) == 0)
                 return 0;
@@ -173,7 +173,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             if (withSliderTravelDistance)
                 currVelocity = currDistance / current.AdjustedDeltaTime;
 
-            const double velocity_distance_cap = OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.1;
+            const double velocity_distance_cap = OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.0;
 
             currVelocity = Math.Min(currVelocity, velocity_distance_cap / current.AdjustedDeltaTime);
             prevVelocity = Math.Min(prevVelocity, velocity_distance_cap / previous.AdjustedDeltaTime);
