@@ -50,7 +50,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             // Apply high circle size bonus
             snapDifficulty *= osuCurrObj.SmallCircleBonus;
 
-            snapDifficulty *= highBpmBonus(osuCurrObj.AdjustedDeltaTime);
+            // snapDifficulty *= highBpmBonus(osuCurrObj.AdjustedDeltaTime);
 
             return snapDifficulty;
         }
@@ -124,7 +124,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
         private static double calculateSliderBonus(OsuDifficultyHitObject osuCurrObj)
         {
-            const double slider_multiplier = 1.35;
+            const double slider_multiplier = 1.0;
 
             // Reward sliders based on velocity.
             double sliderBonus = osuCurrObj.TravelDistance / osuCurrObj.TravelTime;
