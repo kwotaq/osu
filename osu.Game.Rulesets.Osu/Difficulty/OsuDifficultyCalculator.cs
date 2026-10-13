@@ -48,8 +48,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double speedDifficultStrainCount = speed.CountTopWeightedObjectDifficulties(speedDifficultyValue);
             double readingDifficultNoteCount = reading.CountTopWeightedObjectDifficulties(readingDifficultyValue);
 
-            double speedNotes = speed.RelevantObjectCount();
-
             double aimNoSlidersTopWeightedSliderCount = aimWithoutSliders.CountTopWeightedSliders(aimNoSlidersDifficultyValue);
             double aimNoSlidersDifficultStrainCount = aimWithoutSliders.CountTopWeightedStrains(aimNoSlidersDifficultyValue);
 
@@ -73,7 +71,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 ? aimNoSlidersRating / aimRating
                 : 1;
 
-            double speedRating = calculateDifficultyRating(speedDifficultyValue);
+            double speedRating = calculateSpeedDifficultyRating(speedDifficultyValue);
             double readingRating = calculateDifficultyRating(readingDifficultyValue);
 
             double? flashlightRating = null;
@@ -107,7 +105,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 AimDifficulty = aimRating,
                 AimDifficultSliderCount = difficultSliders,
                 SpeedDifficulty = speedRating,
-                SpeedNoteCount = speedNotes,
                 FlashlightDifficulty = flashlightRating,
                 ReadingDifficulty = readingRating,
                 SliderFactor = sliderFactor,
@@ -141,6 +138,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         }
 
         private double calculateAimDifficultyRating(double difficultyValue) => DiffUtils.Pow(difficultyValue, 0.63) * 0.02275;
+        private double calculateSpeedDifficultyRating(double difficultyValue) => DiffUtils.Pow(difficultyValue, 0.45) * 0.098;
 
         private double calculateDifficultyRating(double difficultyValue) => Math.Sqrt(difficultyValue) * 0.0675;
 

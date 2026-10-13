@@ -34,7 +34,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         protected override double ProcessInternal(DifficultyHitObject current)
         {
-            const double skill_multiplier = 66.2;
+            const double skill_multiplier = 72;
 
             if (Mods.Any(m => m is OsuModRelax))
                 return 0;
@@ -72,19 +72,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             (double difficulty, harmonicWeightSum) = HarmonicSeries.Aggregate(ObjectDifficulties, harmonicScale: 20);
 
             return difficulty;
-        }
-
-        public double RelevantObjectCount()
-        {
-            if (ObjectDifficulties.Count == 0)
-                return 0;
-
-            double maxStrain = ObjectDifficulties.Max();
-
-            if (maxStrain == 0)
-                return 0;
-
-            return ObjectDifficulties.Sum(strain => DiffUtils.Logistic(strain / maxStrain, 0.5, 12.0));
         }
 
         public virtual double CountTopWeightedObjectDifficulties(double difficultyValue)
