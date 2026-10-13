@@ -135,6 +135,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
                     }
                 }
 
+                double deltaDifference = Math.Abs(prevDelta - currDelta);
+
+                double windowPenalty = Math.Clamp((deltaDifference - deltaDifferenceEpsilon) / deltaDifferenceEpsilon, 0, 1);
+
+                // reduce ratio bonus if delta difference is too big
+                double differenceMultiplier = Math.Clamp(2.0 - Math.Max(prevDelta, currDelta) / Math.Min(prevDelta, currDelta) / 8.0, 0.0, 1.0);
+
                 effectiveDifficulty *= windowPenalty * differenceMultiplier;
 
                 var currIsland = currObj.Island;
@@ -144,7 +151,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
                 {
                     // bpm change is into slider, this is easy acc window
                     if (currObj.BaseObject is Slider)
-                        effectiveDifficulty *= 0.5;
+                        effectiveDifficulty *= 0.75;
 
                     // previous increase happened a note ago, 1/1->1/2-1/4, dont want to buff this.
                     if (Math.Max(prevPrevObj.DeltaTime, delta_min_value) > prevDelta + deltaDifferenceEpsilon && prevDelta > currDelta + deltaDifferenceEpsilon)
