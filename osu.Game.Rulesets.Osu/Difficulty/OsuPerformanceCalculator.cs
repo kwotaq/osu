@@ -204,7 +204,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                     estimateImproperlyFollowedDifficultSliders = Math.Clamp(countSliderEndsDropped + countSliderTickMiss, 0, attributes.AimDifficultSliderCount);
                 }
 
-                double sliderNerfFactor = (1 - attributes.SliderFactor) * DiffUtils.Pow(1 - estimateImproperlyFollowedDifficultSliders / attributes.AimDifficultSliderCount, 3) + attributes.SliderFactor;
+                double sliderNerfFactor = (1 - attributes.SliderFactor) * DiffUtils.Pow(1 - estimateImproperlyFollowedDifficultSliders / attributes.AimDifficultSliderCount, 3)
+                                          + attributes.SliderFactor;
                 aimDifficulty *= sliderNerfFactor;
             }
 
@@ -239,9 +240,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (score.Mods.Any(h => h is OsuModRelax) || deviation == null)
                 return 0.0;
 
-            double speedDifficulty = attributes.SpeedDifficulty * calculateSpeedHighDeviationNerf(attributes);
-
-            double speedValue = DifficultyToPerformance(speedDifficulty);
+            double speedValue = DifficultyToPerformance(attributes.SpeedDifficulty);
 
             if (effectiveMissCount > 0)
             {
@@ -258,7 +257,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
             // An effective hit window is created based on the speed SR. The higher the speed difficulty, the shorter the hit window.
             // For example, a speed SR of 4.0 leads to an effective hit window of 20ms, which is OD 10.
-            double effectiveHitWindow = 11 * DiffUtils.Pow(4 / speedDifficulty, 0.35);
+            double effectiveHitWindow = 15 * DiffUtils.Pow(4 / attributes.SpeedDifficulty , 0.35);
 
             // Find the proportion of 300s on speed notes assuming the hit window was the effective hit window.
             double effectiveAccuracy = DiffUtils.Erf(effectiveHitWindow / (double)deviation);
@@ -515,7 +514,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         // so we use the amount of relatively difficult sections to adjust miss penalty
         // to make it more punishing on maps with lower amount of hard sections.
         private double calculateMissPenalty(double missCount, double difficultStrainCount) => 0.93 / (missCount / (4 * Math.Log(Math.Max(1, difficultStrainCount))) + 1);
-        private double getComboScalingFactor(OsuDifficultyAttributes attributes) => attributes.MaxCombo <= 0 ? 1.0 : Math.Min(DiffUtils.Pow(scoreMaxCombo, 0.8) / DiffUtils.Pow(attributes.MaxCombo, 0.8), 1.0);
+
+        private double getComboScalingFactor(OsuDifficultyAttributes attributes) =>
+            attributes.MaxCombo <= 0 ? 1.0 : Math.Min(DiffUtils.Pow(scoreMaxCombo, 0.8) / DiffUtils.Pow(attributes.MaxCombo, 0.8), 1.0);
 
         private double calculateRateAdjustedApproachRate(double approachRate, double clockRate)
         {
