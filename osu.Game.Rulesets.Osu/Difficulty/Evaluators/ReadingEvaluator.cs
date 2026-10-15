@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
+using osu.Game.Rulesets.Osu.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Objects;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
@@ -121,13 +122,17 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
 
             double adjustedVelocity = currObj.JumpDistance / DiffUtils.Pow(currObj.AdjustedDeltaTime, 3);
 
+            double pathDifficulty = currObj.Angle == null ? 0 : adjustedVelocity * DiffUtils.Pow(AngleUtils.CalculateWideness(currObj.Angle.Value), 2);
+
+            double movementDifficulty = adjustedVelocity + pathDifficulty * 0.4;
+
             // Higher preempt means that time spent invisible is higher too, we want to reward that
-            double preemptFactor = DiffUtils.Pow(currObj.Preempt, 2.0) * 0.125;
+            double preemptFactor = DiffUtils.Pow(currObj.Preempt, 2.1) * 0.075;
 
             // Account for both past and current densities
-            double densityFactor = DiffUtils.Pow(currentVisibleObjectDensity + pastObjectDifficultyInfluence, 2.6) * 210;
+            double densityFactor = DiffUtils.Pow(currentVisibleObjectDensity + pastObjectDifficultyInfluence, 3) * 25;
 
-            double hiddenDifficulty = (preemptFactor + densityFactor) * constantAngleNerfFactor * adjustedVelocity * 41;
+            double hiddenDifficulty = (preemptFactor + densityFactor) * constantAngleNerfFactor * movementDifficulty * 40;
 
             var previousObj = (OsuDifficultyHitObject)currObj.Previous();
 
