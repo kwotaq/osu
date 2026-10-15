@@ -117,7 +117,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         private static double calculateHiddenDifficulty(OsuDifficultyHitObject currObj, double pastObjectDifficultyInfluence, double currentVisibleObjectDensity, double velocity,
                                                         double constantAngleNerfFactor)
         {
-            const double hidden_multiplier = 10;
+            const double hidden_multiplier = 8;
 
             double adjustedVelocity = currObj.JumpDistance / DiffUtils.Pow(currObj.AdjustedDeltaTime, 3) * 100;
 
@@ -125,7 +125,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             double preemptFactor = DiffUtils.Pow(currObj.Preempt, 2.0) * 0.05;
 
             // Account for both past and current densities
-            double densityFactor = DiffUtils.Pow(currentVisibleObjectDensity + pastObjectDifficultyInfluence, 2.5) * 200;
+            double densityFactor = DiffUtils.Pow(currentVisibleObjectDensity + pastObjectDifficultyInfluence, 2.5) * 130;
 
             double hiddenDifficulty = (preemptFactor + densityFactor) * constantAngleNerfFactor * adjustedVelocity;
 
@@ -136,7 +136,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
                 hiddenDifficulty += 3000000 / DiffUtils.Pow(currObj.AdjustedDeltaTime, 2); // Perfect stacks are harder the less time between notes
 
             // Apply a soft cap to general HD reading to account for partial memorization
-            return DiffUtils.Pow(hiddenDifficulty, 0.4) * hidden_multiplier;
+            return DiffUtils.Pow(hiddenDifficulty, 0.45) * hidden_multiplier;
         }
 
         private static double getPastObjectDifficultyInfluence(OsuDifficultyHitObject currObj)
