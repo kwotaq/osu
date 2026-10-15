@@ -122,12 +122,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             double adjustedVelocity = currObj.JumpDistance / DiffUtils.Pow(currObj.AdjustedDeltaTime, 3);
 
             // Higher preempt means that time spent invisible is higher too, we want to reward that
-            double preemptFactor = DiffUtils.Pow(currObj.Preempt, 2.0) * 0.05;
+            double preemptFactor = DiffUtils.Pow(currObj.Preempt, 2.0) * 0.125;
 
             // Account for both past and current densities
-            double densityFactor = DiffUtils.Pow(currentVisibleObjectDensity + pastObjectDifficultyInfluence, 2.7) * 70;
+            double densityFactor = DiffUtils.Pow(currentVisibleObjectDensity + pastObjectDifficultyInfluence, 2.6) * 210;
 
-            double hiddenDifficulty = (preemptFactor + densityFactor) * constantAngleNerfFactor * adjustedVelocity * 100;
+            double hiddenDifficulty = (preemptFactor + densityFactor) * constantAngleNerfFactor * adjustedVelocity * 41;
 
             var previousObj = (OsuDifficultyHitObject)currObj.Previous();
 
