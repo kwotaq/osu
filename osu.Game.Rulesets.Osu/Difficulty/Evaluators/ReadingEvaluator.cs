@@ -31,17 +31,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
             double constantAngleNerfFactor = getConstantAngleNerfFactor(currObj);
 
             double noteDensityDifficulty = calculateDensityDifficulty(nextObj, velocity, constantAngleNerfFactor, pastObjectDifficultyInfluence, currentVisibleObjectDensity);
+            noteDensityDifficulty *= highBpmBonus(currObj.AdjustedDeltaTime);
 
             double hiddenDifficulty = hidden
                 ? calculateHiddenDifficulty(currObj, pastObjectDifficultyInfluence, currentVisibleObjectDensity, velocity, constantAngleNerfFactor)
                 : 0;
 
             double preemptDifficulty = calculatePreemptDifficulty(velocity, constantAngleNerfFactor, currObj.Preempt);
+            preemptDifficulty *= highBpmBonus(currObj.AdjustedDeltaTime);
 
             double readingDifficulty = DiffUtils.Norm(1.5, preemptDifficulty, hiddenDifficulty, noteDensityDifficulty);
-
-            // Having less time to process information is harder
-            readingDifficulty *= highBpmBonus(currObj.AdjustedDeltaTime);
 
             return readingDifficulty;
         }
@@ -118,26 +117,26 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators
         private static double calculateHiddenDifficulty(OsuDifficultyHitObject currObj, double pastObjectDifficultyInfluence, double currentVisibleObjectDensity, double velocity,
                                                         double constantAngleNerfFactor)
         {
-            const double hidden_multiplier = 0.28;
+            const double hidden_multiplier = 10;
+
+            double adjustedVelocity = currObj.JumpDistance / DiffUtils.Pow(currObj.AdjustedDeltaTime, 2);
 
             // Higher preempt means that time spent invisible is higher too, we want to reward that
             double preemptFactor = DiffUtils.Pow(currObj.Preempt, 2.2) * 0.01;
 
             // Account for both past and current densities
-            double densityFactor = DiffUtils.Pow(currentVisibleObjectDensity + pastObjectDifficultyInfluence, 3.3) * 3;
+            double densityFactor = DiffUtils.Pow(currentVisibleObjectDensity + pastObjectDifficultyInfluence, 4) * 3;
 
-            double hiddenDifficulty = (preemptFactor + densityFactor) * constantAngleNerfFactor * velocity * 0.01;
-
-            // Apply a soft cap to general HD reading to account for partial memorization
-            hiddenDifficulty = DiffUtils.Pow(hiddenDifficulty, 0.4) * hidden_multiplier;
+            double hiddenDifficulty = (preemptFactor + densityFactor) * constantAngleNerfFactor * adjustedVelocity;
 
             var previousObj = (OsuDifficultyHitObject)currObj.Previous();
 
             // Buff perfect stacks only if current note is completely invisible at the time you click the previous note.
             if (currObj.LazyJumpDistance == 0 && currObj.OpacityAt(previousObj.BaseObject.StartTime, true) == 0 && previousObj.StartTime > currObj.StartTime - currObj.Preempt)
-                hiddenDifficulty += hidden_multiplier * 2500 / DiffUtils.Pow(currObj.AdjustedDeltaTime, 1.5); // Perfect stacks are harder the less time between notes
+                hiddenDifficulty += 3000000 / DiffUtils.Pow(currObj.AdjustedDeltaTime, 2); // Perfect stacks are harder the less time between notes
 
-            return hiddenDifficulty;
+            // Apply a soft cap to general HD reading to account for partial memorization
+            return DiffUtils.Pow(hiddenDifficulty, 0.4) * hidden_multiplier;
         }
 
         private static double getPastObjectDifficultyInfluence(OsuDifficultyHitObject currObj)
