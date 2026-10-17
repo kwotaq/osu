@@ -56,9 +56,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private double calculateAdjustedDifficulty(DifficultyHitObject current)
         {
-            const double skill_multiplier_snap = 78.3;
-            const double skill_multiplier_agility = 32.5;
-            const double skill_multiplier_flow = 251.0;
+            const double skill_multiplier_snap = 79.0;
+            const double skill_multiplier_agility = 31.0;
+            const double skill_multiplier_flow = 245.0;
             const double skill_multiplier_spinner = 22.0;
 
             if (current.BaseObject is Spinner)
@@ -206,7 +206,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         private IEnumerable<StrainPeak> getReducedStrainPeaks()
         {
             const int reduced_section_time = 4000;
-            const double reduced_strain_baseline = 0.727;
+            const double reduced_strain_baseline = 0.675;
 
             // Sections with 0 strain are excluded to avoid worst-case time complexity of the following sort (e.g. /b/2351871).
             // These sections will not contribute to the difficulty.
