@@ -39,13 +39,17 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             // Penalize angle repetition.
             snapDifficulty *= vectorAngleRepetition(osuCurrObj, osuLastObj);
-            snapDifficulty += calculateWideAngleBonus(osuCurrObj, osuLastObj, currDistance, prevDistance, withSliderTravelDistance);
-            snapDifficulty += calculateVelocityChangeBonus(withSliderTravelDistance, prevVelocity, currVelocity, currDistance, osuCurrObj, osuLastObj);
+            double wideBonus = calculateWideAngleBonus(osuCurrObj, osuLastObj, currDistance, prevDistance, withSliderTravelDistance);
+            double velocityBonus = calculateVelocityChangeBonus(withSliderTravelDistance, prevVelocity, currVelocity, currDistance, osuCurrObj, osuLastObj);
+
+            double sliderBonus = 0;
 
             if (osuCurrObj.BaseObject is Slider && withSliderTravelDistance)
             {
-                snapDifficulty += calculateSliderBonus(osuCurrObj);
+                sliderBonus = calculateSliderBonus(osuCurrObj);
             }
+
+            snapDifficulty += DiffUtils.Norm(1.5, wideBonus, velocityBonus, sliderBonus);
 
             // Apply high circle size bonus
             snapDifficulty *= osuCurrObj.SmallCircleBonus;
@@ -124,7 +128,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             double distRatio = DiffUtils.Smoothstep(Math.Abs(prevVelocity - currVelocity) / Math.Max(prevVelocity, currVelocity), 0, 1);
 
             // Reward for % distance up to 125 / strainTime for overlaps where velocity is still changing.
-            double overlapVelocityBuff = Math.Min(OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.25 / Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), Math.Abs(prevVelocity - currVelocity));
+            double overlapVelocityBuff = Math.Min(OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.25 / Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime),
+                Math.Abs(prevVelocity - currVelocity));
 
             double velocityChangeBonus = overlapVelocityBuff * distRatio;
 
