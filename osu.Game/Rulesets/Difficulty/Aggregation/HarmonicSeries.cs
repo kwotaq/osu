@@ -47,5 +47,28 @@ namespace osu.Game.Rulesets.Difficulty.Aggregation
 
             return (difficulty, objectWeightSum);
         }
+
+        public static (double difficulty, double weightSum) Aggregate(List<(double, double)> difficulties, double harmonicScale = 1.0, double decayExponent = 0.9)
+        {
+            if (difficulties.Count == 0)
+                return (0, 0);
+
+            double difficulty = 0;
+            int index = 0;
+            double objectWeightSum = 0;
+
+            foreach (var (obj, mult) in difficulties.OrderDescending().Where(v => v.Item1 > 0))
+            {
+                // Use a harmonic sum that considers each object of the map according to a predefined weight.
+                double weight = (1 + (harmonicScale / (1 + index))) / (DiffUtils.Pow(index, decayExponent) + 1 + (harmonicScale / (1 + index))) * mult;
+
+                objectWeightSum += weight;
+
+                difficulty += obj * weight;
+                index += 1;
+            }
+
+            return (difficulty, objectWeightSum);
+        }
     }
 }
