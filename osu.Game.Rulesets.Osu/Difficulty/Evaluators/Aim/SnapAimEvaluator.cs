@@ -58,7 +58,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj,
                                                       double currDistance, double prevDistance, bool withSliderTravelDistance)
         {
-            const double wide_angle_multiplier = 65_000_000;
+            const double wide_angle_multiplier = 50_000;
 
             if (osuCurrObj.Angle == null || osuLastObj.Angle == null)
                 return 0;
@@ -69,7 +69,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             wideAngleBonus *= DiffUtils.ReverseLerp(osuLastObj.LazyJumpDistance, OsuDifficultyHitObject.NORMALISED_RADIUS, OsuDifficultyHitObject.NORMALISED_DIAMETER);
 
-            wideAngleBonus /= DiffUtils.Pow(osuCurrObj.AdjustedDeltaTime, 3.5);
+            wideAngleBonus /= DiffUtils.Pow(osuCurrObj.AdjustedDeltaTime, 2.0);
 
             // Penalize rhythm changes.
             wideAngleBonus *= Math.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), 3);
