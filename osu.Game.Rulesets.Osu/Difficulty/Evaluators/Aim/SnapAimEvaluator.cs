@@ -23,11 +23,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         /// </summary>
         public static double EvaluateDifficultyOf(DifficultyHitObject current, bool withSliderTravelDistance)
         {
+            if (current.Index <= 1 || current.BaseObject is Spinner)
+                return 0;
+
             var osuCurrObj = (OsuDifficultyHitObject)current;
             var osuLastObj = (OsuDifficultyHitObject)current.Previous();
-
-            if (current.BaseObject is Spinner || current.Index <= 1 || osuLastObj.BaseObject is Spinner)
-                return 0;
 
             double currDistance = withSliderTravelDistance ? osuCurrObj.LazyJumpDistance : osuCurrObj.JumpDistance;
             double currVelocity = calculateCurrentVelocity(osuCurrObj, osuLastObj, currDistance, withSliderTravelDistance);
@@ -39,7 +39,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             // Penalize angle repetition.
             snapDifficulty *= vectorAngleRepetition(osuCurrObj, osuLastObj);
-            snapDifficulty += calculateWideAngleBonus(osuCurrObj, osuLastObj);
+            snapDifficulty += calculateWideAngleBonus(osuCurrObj, osuLastObj, currDistance, prevDistance, withSliderTravelDistance);
             snapDifficulty += calculateVelocityChangeBonus(withSliderTravelDistance, prevVelocity, currVelocity, currDistance, osuCurrObj, osuLastObj);
 
             if (osuCurrObj.BaseObject is Slider && withSliderTravelDistance)
@@ -55,7 +55,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             return snapDifficulty;
         }
 
-        private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj)
+        private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj,
+                                                      double currDistance, double prevDistance, bool withSliderTravelDistance)
         {
             const double wide_angle_multiplier = 65_000_000;
 
@@ -79,7 +80,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         private static double calculateVelocityChangeBonus(bool withSliderTravelDistance, double prevVelocity, double currVelocity,
                                                            double currDistance, OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj)
         {
-            const double velocity_change_multiplier = 0.9;
+            const double velocity_change_multiplier = 0.85;
 
             if (Math.Max(prevVelocity, currVelocity) == 0)
                 return 0;
@@ -90,12 +91,15 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 currVelocity = currDistance / osuCurrObj.AdjustedDeltaTime;
             }
 
+            // cap velocity to at least 1 radius distance to only award snap patterns
+            currVelocity = Math.Max(currVelocity, OsuDifficultyHitObject.NORMALISED_DIAMETER / osuCurrObj.AdjustedDeltaTime);
+            prevVelocity = Math.Max(prevVelocity, OsuDifficultyHitObject.NORMALISED_DIAMETER / osuLastObj.AdjustedDeltaTime);
+
             // Scale with ratio of difference compared to 0.5 * max dist.
             double distRatio = DiffUtils.Smoothstep(Math.Abs(prevVelocity - currVelocity) / Math.Max(prevVelocity, currVelocity), 0, 1);
 
             // Reward for % distance up to 125 / strainTime for overlaps where velocity is still changing.
-            double overlapVelocityBuff = Math.Min(OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.25 / Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime),
-                Math.Abs(prevVelocity - currVelocity));
+            double overlapVelocityBuff = Math.Min(OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.25 / Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), Math.Abs(prevVelocity - currVelocity));
 
             double velocityChangeBonus = overlapVelocityBuff * distRatio;
 
@@ -132,11 +136,15 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
         private static double vectorAngleRepetition(OsuDifficultyHitObject current, OsuDifficultyHitObject previous)
         {
-            if (current.Angle == null || previous.Angle == null)
+            if (
+                current.Angle == null ||
+                previous.Angle == null ||
+                previous.BaseObject is Spinner ||
+                previous.Previous(0).BaseObject is Spinner)
                 return 1;
 
             const double note_limit = 6;
-            const double maximum_repetition_nerf = 0.25;
+            const double maximum_repetition_nerf = 0.15;
             const double maximum_vector_influence = 0.5;
 
             double constantAngleCount = 0;
@@ -145,7 +153,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             {
                 OsuDifficultyHitObject? prevObj = (OsuDifficultyHitObject)current.Previous(index);
 
-                if (prevObj == null)
+                if (prevObj == null || prevObj.BaseObject is Spinner)
                     break;
 
                 // Only consider vectors in the same jump section, stopping to change rhythm ruins momentum
