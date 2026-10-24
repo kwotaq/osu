@@ -72,7 +72,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             wideAngleBonus /= DiffUtils.Pow(osuCurrObj.AdjustedDeltaTime, 2.0);
 
             // Penalize rhythm changes.
-            wideAngleBonus *= Math.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), 3);
+            wideAngleBonus *= Math.Pow(Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime), 1);
 
             return wideAngleBonus * wide_angle_multiplier;
         }
