@@ -56,8 +56,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private double calculateAdjustedDifficulty(DifficultyHitObject current)
         {
-            const double skill_multiplier_snap = 80.3;
-            const double skill_multiplier_agility = 32.5;
+            const double skill_multiplier_snap = 73.3;
+            const double skill_multiplier_agility = 25.0;
             const double skill_multiplier_flow = 222.0;
             const double skill_multiplier_spinner = 22.0;
 

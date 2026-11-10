@@ -69,7 +69,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             }
 
             // Final velocity is being raised to a power because flow difficulty scales harder with both high distance and time, and we want to account for that
-            flowDifficulty = DiffUtils.Pow(flowDifficulty, 1.25);
+            flowDifficulty = DiffUtils.Pow(flowDifficulty, 1.45);
 
             // Reduce difficulty for low spacing since spacing below radius is always to be flowed
             return flowDifficulty * DiffUtils.Smootherstep(currDistance, 0, OsuDifficultyHitObject.NORMALISED_RADIUS);
@@ -99,7 +99,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             double angleDifferenceAdjusted = Math.Sin(angleDifference / 2) * 180.0;
             double angularVelocity = angleDifferenceAdjusted / (current.AdjustedDeltaTime * 0.1);
 
-            return 0.8 + Math.Sqrt(angularVelocity / 200.0);
+            return 0.70 + Math.Sqrt(angularVelocity / 100.0);
         }
 
         private static double calculateAcuteAngleBonus(
@@ -173,7 +173,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             if (withSliderTravelDistance)
                 currVelocity = currDistance / current.AdjustedDeltaTime;
 
-            const double velocity_distance_cap = OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.2;
+            const double velocity_distance_cap = OsuDifficultyHitObject.NORMALISED_DIAMETER * 1.3;
 
             currVelocity = Math.Min(currVelocity, velocity_distance_cap / current.AdjustedDeltaTime);
             prevVelocity = Math.Min(prevVelocity, velocity_distance_cap / previous.AdjustedDeltaTime);

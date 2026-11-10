@@ -17,7 +17,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         /// </summary>
         public static double EvaluateDifficultyOf(DifficultyHitObject current)
         {
-            const double previous_delta_influence = 0.5;
+            const double previous_delta_influence = 1;
 
             if (current.BaseObject is Spinner)
                 return 0;
@@ -51,7 +51,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
         private static double calculateAngleSwitchingBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject? osuPrevObj)
         {
-            const double angle_switching_bonus = 0.5;
+            const double angle_switching_bonus = 1.3;
 
             if (osuCurrObj.Angle == null || osuPrevObj?.Angle == null)
                 return 0;
