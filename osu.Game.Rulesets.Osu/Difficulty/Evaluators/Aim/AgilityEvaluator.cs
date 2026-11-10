@@ -51,7 +51,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
         private static double calculateAngleSwitchingBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject? osuPrevObj)
         {
-            const double angle_switching_bonus = 0.8;
+            const double angle_switching_bonus = 0.5;
 
             if (osuCurrObj.Angle == null || osuPrevObj?.Angle == null)
                 return 0;

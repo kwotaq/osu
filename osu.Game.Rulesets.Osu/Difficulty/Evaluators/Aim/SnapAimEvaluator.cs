@@ -58,15 +58,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         private static double calculateWideAngleBonus(OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuLastObj,
                                                       double currDistance, double prevDistance, bool withSliderTravelDistance)
         {
-            const double wide_angle_multiplier = 2.15;
+            const double wide_angle_multiplier = 2.1;
 
             if (osuCurrObj.Angle == null || osuLastObj.Angle == null)
                 return 0;
 
             double wideAngleBonus = AngleUtils.CalculateWideness(osuCurrObj.Angle.Value);
-
-            // Penalize angle repetition. It is important to do it _before_ multiplying by velocity because we compare raw wideness here
-            wideAngleBonus *= 0.25 + 0.75 * (1 - Math.Min(wideAngleBonus, DiffUtils.Pow(AngleUtils.CalculateWideness(osuLastObj.Angle.Value), 3)));
 
             // Rescaling velocity for the wide angle bonus
             const double wide_angle_time_scale = 1.2;
@@ -98,6 +95,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                     wideAngleBonus *= 1 - 0.55 * (1 - distance);
                 }
             }
+
+            // Penalize rhythm changes.
+            wideAngleBonus *= Math.Min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime) / Math.Max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime);
 
             return wideAngleBonus * wide_angle_multiplier;
         }
@@ -169,7 +169,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 return 1;
 
             const double note_limit = 6;
-            const double maximum_repetition_nerf = 0.15;
+            const double maximum_repetition_nerf = 0.2;
             const double maximum_vector_influence = 0.5;
 
             double constantAngleCount = 0;
@@ -206,7 +206,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
 
             double baseNerf = 1 - maximum_repetition_nerf * AngleUtils.CalculateAcuteness(lastAngle) * angleDifferenceAdjusted;
 
-            return DiffUtils.Pow(baseNerf + (1 - baseNerf) * vectorRepetition * maximum_vector_influence * stackFactor, 2);
+            return DiffUtils.Pow(baseNerf + (1 - baseNerf) * vectorRepetition * maximum_vector_influence * stackFactor, 3);
         }
 
         private static double highBpmBonus(double ms) => 1 / (1 - DiffUtils.Pow(0.03, DiffUtils.Pow(ms / 1000, 0.65)));
