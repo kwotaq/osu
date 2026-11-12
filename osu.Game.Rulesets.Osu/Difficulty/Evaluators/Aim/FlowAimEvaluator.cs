@@ -95,7 +95,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             double angleDifferenceAdjusted = Math.Sin(angleDifference / 2) * 180.0;
             double angularVelocity = angleDifferenceAdjusted / (current.AdjustedDeltaTime * 0.1);
 
-            return 0.75 + 0.3 * Math.Log10(1 + angularVelocity / 2.0);
+            return 0.8 + Math.Sqrt(angularVelocity / 270.0);
         }
 
         private static double calculateAcuteAngleBonus(
@@ -105,13 +105,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             OsuDifficultyHitObject? next,
             double currVelocity)
         {
-            const double acute_angle_multiplier = 0.35;
+            const double acute_angle_multiplier = 0.95;
 
             if (current.Angle == null || next?.Angle == null)
                 return 0;
 
-            double currAcuteness = DiffUtils.Smootherstep(current.Angle.Value, double.DegreesToRadians(140), double.DegreesToRadians(90));
-            double nextAcuteness = DiffUtils.Smootherstep(next.Angle.Value, double.DegreesToRadians(140), double.DegreesToRadians(90));
+            double currAcuteness = DiffUtils.Smootherstep(current.Angle.Value, double.DegreesToRadians(100), double.DegreesToRadians(80));
+            double nextAcuteness = DiffUtils.Smootherstep(next.Angle.Value, double.DegreesToRadians(100), double.DegreesToRadians(80));
 
             double acuteness;
             double overlapWeight;
