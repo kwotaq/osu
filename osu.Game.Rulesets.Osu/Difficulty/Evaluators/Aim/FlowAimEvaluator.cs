@@ -5,7 +5,6 @@ using System;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
-using osu.Game.Rulesets.Osu.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Objects;
 using osuTK;
 
@@ -108,13 +107,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             OsuDifficultyHitObject? next,
             double currVelocity)
         {
-            const double acute_angle_multiplier = 0.9;
+            const double acute_angle_multiplier = 0.95;
 
             if (current.Angle == null || next?.Angle == null)
                 return 0;
 
-            double currAcuteness = AngleUtils.CalculateAcuteness(current.Angle.Value);
-            double nextAcuteness = AngleUtils.CalculateAcuteness(next.Angle.Value);
+            double currAcuteness = DiffUtils.Smootherstep(current.Angle.Value, double.DegreesToRadians(120), double.DegreesToRadians(60));
+            double nextAcuteness = DiffUtils.Smootherstep(next.Angle.Value, double.DegreesToRadians(120), double.DegreesToRadians(60));
 
             double acuteness;
             double overlapWeight;
