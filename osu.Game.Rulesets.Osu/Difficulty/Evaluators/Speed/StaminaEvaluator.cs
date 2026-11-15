@@ -2,7 +2,6 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using osu.Game.Rulesets.Difficulty.Preprocessing;
-using osu.Game.Rulesets.Difficulty.Utils;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Osu.Objects;
 
@@ -16,17 +15,23 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
                 return 0;
 
             var osuCurrObj = (OsuDifficultyHitObject)current;
+            var osuNextObj = (OsuDifficultyHitObject?)osuCurrObj.Next();
 
-            double bpmBonus = 0.0;
+            double deltaTime = osuCurrObj.AdjustedDeltaTime;
 
-            if (DiffUtils.MillisecondsToBPM(osuCurrObj.AdjustedDeltaTime) > 240)
-                bpmBonus = DiffUtils.Pow((DiffUtils.BPMToMilliseconds(240) - osuCurrObj.AdjustedDeltaTime) / 20, 1.05);
+            if (osuNextObj != null)
+            {
+                const double next_delta_influence_on_doubletaps = 0.2;
 
-            double finalValue = (1 + bpmBonus) * 1000 / osuCurrObj.AdjustedDeltaTime;
+                // If the current and next object are a doubletappable double then we want to partially combine their delta times to treat it as a single press
+                double doubleTapFeasibility = osuCurrObj.CalculateDoubleTapFeasibility(osuNextObj);
 
-            double doubletapness = 1.0 - osuCurrObj.CalculateDoubleTapFeasibility((OsuDifficultyHitObject?)osuCurrObj.Next());
+                deltaTime += osuNextObj.AdjustedDeltaTime *
+                             doubleTapFeasibility *
+                             next_delta_influence_on_doubletaps;
+            }
 
-            return finalValue * doubletapness;
+            return 1000 / deltaTime;
         }
     }
 }
