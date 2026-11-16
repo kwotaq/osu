@@ -23,7 +23,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         private readonly List<double> sliderStrains = new List<double>();
 
         private double currentBurstStrain;
-        private double currentStreamStrain;
         private double currentStaminaStrain;
         private double currentRhythm;
 
@@ -34,16 +33,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         {
         }
 
-        private double strainDecayBurst(double ms) => DiffUtils.Pow(0.1, ms / 1000);
-        private double strainDecayStream(double ms) => DiffUtils.Pow(0.1, DiffUtils.Pow(ms / 1000, 1.8));
+        private double strainDecayBurst(double ms) => DiffUtils.Pow(0.3, ms / 1000);
         private double strainDecayStamina(double ms) => DiffUtils.Pow(0.1, DiffUtils.Pow(ms / 1000, 2.5) * 1.75);
 
         protected override double ProcessInternal(DifficultyHitObject current)
         {
-            const double total_multiplier = 0.72;
-            const double burst_multiplier = 2.25;
-            const double stream_multiplier = 0.1;
-            const double stamina_multiplier = 0.03;
+            const double total_multiplier = 0.8;
+            const double burst_multiplier = 1.3;
+            const double stamina_multiplier = 0.04;
 
             if (Mods.Any(m => m is OsuModRelax))
                 return 0;
@@ -57,14 +54,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             currentBurstStrain *= strainDecayBurst(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
             currentBurstStrain += burstDifficulty * burst_multiplier;
 
-            currentStreamStrain *= strainDecayStream(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
-            currentStreamStrain += staminaDifficulty * stream_multiplier;
-
             currentStaminaStrain *= strainDecayStamina(((OsuDifficultyHitObject)current).AdjustedDeltaTime);
             currentStaminaStrain += staminaDifficulty * stamina_multiplier;
 
             double totalValue = (currentBurstStrain * currentRhythm +
-                                 currentStreamStrain +
                                  currentStaminaStrain) * total_multiplier;
 
             if (current.BaseObject is Slider)
