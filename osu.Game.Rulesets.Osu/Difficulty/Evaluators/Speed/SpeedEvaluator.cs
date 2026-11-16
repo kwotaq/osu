@@ -29,7 +29,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
 
             if (osuNextObj != null)
             {
-                const double next_delta_influence_on_doubletaps = 0.2;
+                const double next_delta_influence_on_doubletaps = 0.3;
 
                 // If the current and next object are a doubletappable double then we want to partially combine their delta times to treat it as a single press
                 double doubleTapFeasibility = osuCurrObj.CalculateDoubleTapFeasibility(osuNextObj);
