@@ -35,15 +35,15 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         }
 
         private double strainDecayBurst(double ms) => DiffUtils.Pow(0.1, ms / 1000);
-        private double strainDecayStream(double ms) => DiffUtils.Pow(0.01, DiffUtils.Pow(ms / 1000, 1.6));
-        private double strainDecayStamina(double ms) => DiffUtils.Pow(0.1, DiffUtils.Pow(ms / 1000, 2.75) * 2);
+        private double strainDecayStream(double ms) => DiffUtils.Pow(0.1, DiffUtils.Pow(ms / 1000, 1.6));
+        private double strainDecayStamina(double ms) => DiffUtils.Pow(0.1, DiffUtils.Pow(ms / 1000, 2.75) * 1.75);
 
         protected override double ProcessInternal(DifficultyHitObject current)
         {
             const double total_multiplier = 0.78;
-            const double burst_multiplier = 2.2;
-            const double stream_multiplier = 0.18;
-            const double stamina_multiplier = 0.025;
+            const double burst_multiplier = 2.1;
+            const double stream_multiplier = 0.15;
+            const double stamina_multiplier = 0.022;
 
             if (Mods.Any(m => m is OsuModRelax))
                 return 0;
