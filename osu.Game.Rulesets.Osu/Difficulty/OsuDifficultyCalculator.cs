@@ -159,6 +159,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 objects.Add(new OsuDifficultyHitObject(beatmap.HitObjects[i], beatmap.HitObjects[i - 1], clockRate, objects, objects.Count));
             }
 
+            RhythmIslandsPreprocessor.PopulateIslands(objects);
+
             return objects;
         }
 
