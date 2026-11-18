@@ -47,14 +47,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Speed
         private static double calculateSpeedBonus(double deltaTime)
         {
             const double min_speed_bonus = 200; // 200 BPM 1/4th
-            const double speed_balancing_factor = 35;
+            const double speed_balancing_factor = 36;
 
             // speedBonus will be 0.0 for BPM < 200
             double speedBonus = 0.0;
 
             // Add additional scaling bonus for streams/bursts higher than 200bpm
             if (DiffUtils.MillisecondsToBPM(deltaTime) > min_speed_bonus)
-                speedBonus = 0.75 * DiffUtils.Pow((DiffUtils.BPMToMilliseconds(min_speed_bonus) - deltaTime) / speed_balancing_factor, 2.7);
+                speedBonus = 0.75 * DiffUtils.Pow((DiffUtils.BPMToMilliseconds(min_speed_bonus) - deltaTime) / speed_balancing_factor, 2.5);
 
             return (1 + speedBonus) * 1000 / deltaTime;
         }
