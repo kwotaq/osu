@@ -239,7 +239,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (score.Mods.Any(h => h is OsuModRelax) || deviation == null)
                 return 0.0;
 
-            double speedDifficulty = attributes.SpeedDifficulty * calculateSpeedHighDeviationNerf(attributes);
+            double speedDifficulty = attributes.SpeedDifficulty;
 
             double speedValue = DifficultyToPerformance(speedDifficulty);
 
@@ -258,7 +258,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
             // An effective hit window is created based on the speed SR. The higher the speed difficulty, the shorter the hit window.
             // For example, a speed SR of 4.0 leads to an effective hit window of 20ms, which is OD 10.
-            double effectiveHitWindow = 11 * DiffUtils.Pow(4 / speedDifficulty, 0.35);
+            double effectiveHitWindow = 13 * DiffUtils.Pow(4 / speedDifficulty, 0.35);
 
             // Find the proportion of 300s on speed notes assuming the hit window was the effective hit window.
             double effectiveAccuracy = DiffUtils.Erf(effectiveHitWindow / (double)deviation);
@@ -460,31 +460,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             deviation = Math.Sqrt(((countGreat + countOk) * DiffUtils.Pow(deviation, 2) + countMeh * mehVariance) / (countGreat + countOk + countMeh));
 
             return deviation;
-        }
-
-        // Calculates multiplier for speed to account for improper tapping based on the deviation and speed difficulty
-        // https://www.desmos.com/calculator/dmogdhzofn
-        private double calculateSpeedHighDeviationNerf(OsuDifficultyAttributes attributes)
-        {
-            if (deviation == null)
-                return 0;
-
-            // Decides a point where the difficulty played compared to the speed deviation is assumed to be tapped improperly.
-            // Any difficulty above this point is considered "excess" speed difficulty.
-            // This is used to cause difficulty above the cutoff to scale logarithmically towards the original speed value thus nerfing the value.
-            double excessSpeedDifficultyCutoff = 2.9 + 1.45 * DiffUtils.Pow(22 / deviation.Value, 5);
-
-            if (attributes.SpeedDifficulty <= excessSpeedDifficultyCutoff)
-                return 1.0;
-
-            const double scale = 0.45;
-            double adjustedSpeedDifficulty = scale * (Math.Log((attributes.SpeedDifficulty - excessSpeedDifficultyCutoff) / scale + 1) + excessSpeedDifficultyCutoff / scale);
-
-            // 220 UR and less are considered tapped correctly to ensure that normal scores will be punished as little as possible
-            double lerp = 1 - DiffUtils.ReverseLerp(deviation.Value, 22.0, 27.0);
-            adjustedSpeedDifficulty = double.Lerp(adjustedSpeedDifficulty, attributes.SpeedDifficulty, lerp);
-
-            return adjustedSpeedDifficulty / attributes.SpeedDifficulty;
         }
 
         /// <summary>
