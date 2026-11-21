@@ -63,7 +63,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             }
 
             // Final velocity is being raised to a power because flow difficulty scales harder with both high distance and time, and we want to account for that
-            flowDifficulty = DiffUtils.Pow(flowDifficulty, 1.45);
+            flowDifficulty = DiffUtils.Pow(flowDifficulty, 1.4);
 
             flowDifficulty += osuCurrObj.SmallCircleBonus * 0.9;
 
@@ -105,13 +105,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             OsuDifficultyHitObject? next,
             double currVelocity)
         {
-            const double acute_angle_multiplier = 0.95;
+            const double acute_angle_multiplier = 0.75;
 
             if (current.Angle == null || next?.Angle == null)
                 return 0;
 
-            double currAcuteness = DiffUtils.Smootherstep(current.Angle.Value, double.DegreesToRadians(100), double.DegreesToRadians(80));
-            double nextAcuteness = DiffUtils.Smootherstep(next.Angle.Value, double.DegreesToRadians(100), double.DegreesToRadians(80));
+            double currAcuteness = DiffUtils.Smootherstep(current.Angle.Value, double.DegreesToRadians(160), double.DegreesToRadians(20));
+            double nextAcuteness = DiffUtils.Smootherstep(next.Angle.Value, double.DegreesToRadians(160), double.DegreesToRadians(20));
 
             double acuteness;
             double overlapWeight;
@@ -149,7 +149,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 overlapWeight = calculateOverlapWeight(next, current, last);
             }
 
-            return currVelocity * acuteness * overlapWeight * acute_angle_multiplier;
+            return DiffUtils.Pow(currVelocity, 2) * acuteness * overlapWeight * acute_angle_multiplier;
         }
 
         private static double calculateVelocityChangeBonus(
