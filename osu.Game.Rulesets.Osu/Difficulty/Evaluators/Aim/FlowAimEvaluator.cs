@@ -63,7 +63,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             }
 
             // Final velocity is being raised to a power because flow difficulty scales harder with both high distance and time, and we want to account for that
-            flowDifficulty = DiffUtils.Pow(flowDifficulty, 1.4);
+            flowDifficulty = DiffUtils.Pow(flowDifficulty, 1.45);
 
             flowDifficulty += osuCurrObj.SmallCircleBonus * 0.9;
 
@@ -88,14 +88,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
         /// </summary>
         private static double calculateAngularVelocityBonus(OsuDifficultyHitObject current, OsuDifficultyHitObject last)
         {
-            if (current.Angle == null || last.Angle == null)
+            if (current.UnsignedAngle == null || last.UnsignedAngle == null)
                 return 1;
 
-            double angleDifference = Math.Abs(current.Angle.Value - last.Angle.Value);
+            double angleDifference = Math.Abs(current.UnsignedAngle.Value - last.UnsignedAngle.Value);
             double angleDifferenceAdjusted = Math.Sin(angleDifference / 2) * 180.0;
             double angularVelocity = angleDifferenceAdjusted / (current.AdjustedDeltaTime * 0.1);
 
-            return 0.8 + Math.Sqrt(angularVelocity / 270.0);
+            return 0.75 + 0.4 * Math.Log10(1 + angularVelocity / 2.0);
         }
 
         private static double calculateAcuteAngleBonus(
@@ -110,8 +110,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
             if (current.Angle == null || next?.Angle == null)
                 return 0;
 
-            double currAcuteness = DiffUtils.Smootherstep(current.Angle.Value, double.DegreesToRadians(160), double.DegreesToRadians(0));
-            double nextAcuteness = DiffUtils.Smootherstep(next.Angle.Value, double.DegreesToRadians(160), double.DegreesToRadians(0));
+            double currAcuteness = DiffUtils.Smootherstep(current.Angle.Value, double.DegreesToRadians(150), double.DegreesToRadians(30));
+            double nextAcuteness = DiffUtils.Smootherstep(next.Angle.Value, double.DegreesToRadians(150), double.DegreesToRadians(30));
 
             double acuteness;
             double overlapWeight;
@@ -149,7 +149,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Evaluators.Aim
                 overlapWeight = calculateOverlapWeight(next, current, last);
             }
 
-            return DiffUtils.Pow(currVelocity, 2) * acuteness * overlapWeight * acute_angle_multiplier;
+            return DiffUtils.Pow(currVelocity, 1) * acuteness * overlapWeight * acute_angle_multiplier;
         }
 
         private static double calculateVelocityChangeBonus(

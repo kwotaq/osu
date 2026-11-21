@@ -116,6 +116,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
         /// </summary>
         public double? Angle { get; private set; }
 
+        public double? UnsignedAngle { get; private set; }
+
         /// <summary>
         /// Angle of the vector created between current and current-1
         /// normalised to consider symmetrical vectors in any axis to be the same angle.
@@ -267,7 +269,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
                 Vector2 v = BaseObject.StackedPosition - lastCursorPosition;
                 NormalisedVectorAngle = Math.Atan2(Math.Abs(v.Y), Math.Abs(v.X));
 
-                Angle = Math.Min(angle, sliderAngle);
+                bool sliderAngleIsMoreAcute = Math.Abs(angle) > Math.Abs(sliderAngle);
+
+                Angle = Math.Min(Math.Abs(angle), Math.Abs(sliderAngle));
+                UnsignedAngle = sliderAngleIsMoreAcute ? sliderAngle : angle;
             }
         }
 
